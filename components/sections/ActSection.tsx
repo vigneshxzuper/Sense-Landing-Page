@@ -64,7 +64,7 @@ export default function ActSection() {
   };
 
   return (
-    <section ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 24px", minHeight: "100vh" }}>
+    <section id="act-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 24px", minHeight: "100vh" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto 60px" }}>
         <div style={{ height: "1px", background: "var(--line)" }} />
       </div>

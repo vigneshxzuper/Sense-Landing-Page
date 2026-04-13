@@ -151,20 +151,14 @@ export function SenseChat() {
               type="button"
               onClick={() => handleChipClick(c.topic)}
               className={cn(
-                "px-4 py-2 rounded-full text-[13px] transition-all duration-300 hover:scale-[1.03] cursor-pointer",
-                isDark ? "text-white/80 hover:text-white" : "text-zinc-600 hover:text-zinc-900"
+                "px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 cursor-pointer",
+                "text-zinc-800 hover:text-zinc-900"
               )}
               style={{
-                background: isDark
-                  ? "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.10) 100%)"
-                  : "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 100%)",
-                backdropFilter: "blur(20px) saturate(160%)",
-                WebkitBackdropFilter: "blur(20px) saturate(160%)",
-                border: isDark ? "1px solid rgba(255,255,255,0.22)" : "1px solid rgba(0,0,0,0.1)",
-                boxShadow: isDark
-                  ? "0 8px 32px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(255,255,255,0.05)"
-                  : "0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
-                textShadow: isDark ? "0 1px 4px rgba(0,0,0,0.6)" : "none",
+                background: "rgba(255,255,255,0.92)",
+                border: "1px solid rgba(255,255,255,0.95)",
+                borderRadius: "12px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08)",
               }}
             >
               {c.label}

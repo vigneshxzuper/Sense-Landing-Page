@@ -125,7 +125,7 @@ export default function RadarSection() {
   });
 
   return (
-    <section ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 24px", minHeight: "100vh", overflow: "hidden" }}>
+    <section id="radar-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 24px", minHeight: "100vh", overflow: "hidden" }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ marginBottom: "60px" }}>
           <div style={{ height: "1px", background: "var(--line)" }} />

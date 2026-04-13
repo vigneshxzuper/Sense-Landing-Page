@@ -200,7 +200,7 @@ export default function ShowcaseSection() {
   };
 
   return (
-    <section ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 0", overflow: "hidden" }}>
+    <section id="showcase-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 0", minHeight: "100vh", overflow: "hidden" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto 56px", padding: "0 24px" }}>
         <div style={{ height: "1px", background: "var(--line)", marginBottom: "60px" }} />
         <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.2)", borderRadius: "100px", padding: "5px 14px", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "20px" }}>

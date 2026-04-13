@@ -125,6 +125,7 @@ export default function DocsAnimation() {
 
   return (
     <section
+      id="docs-section"
       ref={sectionRef}
       style={{
         background: "var(--bg)",

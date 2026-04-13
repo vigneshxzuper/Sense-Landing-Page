@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SenseChat } from "@/components/ui/sense-chat";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -163,11 +164,25 @@ export default function AnalyzeSection() {
       ref={sectionRef}
       style={{ background: "var(--bg)", padding: "120px 24px", minHeight: "100vh", position: "relative" }}
     >
-      <div style={{ maxWidth: "900px", margin: "0 auto 60px" }}>
-        <div style={{ height: "1px", background: "var(--line)" }} />
+      {/* Ask — centered header + chat */}
+      <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
+        <div style={{ marginBottom: "48px" }}>
+          <div style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "16px" }}>
+            Ask.
+          </div>
+          <p style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "var(--ink2)", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto" }}>
+            Type a question in plain English — Sense queries your data and answers instantly.
+          </p>
+        </div>
+
+        <div style={{ marginBottom: "48px" }}>
+          <SenseChat />
+        </div>
       </div>
 
+      {/* Analyze — conversation + charts */}
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+        <div style={{ height: "1px", background: "var(--line)", marginBottom: "60px" }} />
         <div style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "40px" }}>
           Analyze.
         </div>
