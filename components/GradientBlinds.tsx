@@ -1,6 +1,6 @@
-import { ComponentType } from "react";
+"use client";
 
-interface GradientBlindsProps {
+export interface GradientBlindsProps {
   className?: string;
   dpr?: number;
   paused?: boolean;
@@ -19,8 +19,10 @@ interface GradientBlindsProps {
   mixBlendMode?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const GradientBlinds: ComponentType<GradientBlindsProps> =
-  require("./GradientBlinds.jsx").default;
+// Re-export the untyped JSX component with proper TypeScript interface
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+const Impl = require("./GradientBlinds.jsx").default;
 
-export default GradientBlinds;
+export default function GradientBlinds(props: GradientBlindsProps) {
+  return <Impl {...props} />;
+}
