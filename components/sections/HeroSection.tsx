@@ -1,12 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
 import { SenseChat } from "@/components/ui/sense-chat";
 import { useTheme } from "@/components/ThemeProvider";
 import type { GradientBlindsProps } from "../GradientBlinds";
 
 const GradientBlinds = dynamic<GradientBlindsProps>(
-  () => import("../GradientBlinds").then((m) => m.default) as never,
+  () => import("../GradientBlinds").then((m) => m.default as ComponentType<GradientBlindsProps>),
   { ssr: false }
 );
 
