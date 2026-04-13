@@ -3,8 +3,12 @@
 import dynamic from "next/dynamic";
 import { SenseChat } from "@/components/ui/sense-chat";
 import { useTheme } from "@/components/ThemeProvider";
+import type { GradientBlindsProps } from "../GradientBlinds";
 
-const GradientBlinds = dynamic(() => import("../GradientBlinds"), { ssr: false });
+const GradientBlinds = dynamic<GradientBlindsProps>(
+  () => import("../GradientBlinds").then((m) => m.default) as never,
+  { ssr: false }
+);
 
 export default function HeroSection() {
   const { theme } = useTheme();
