@@ -21,7 +21,7 @@ export interface GradientBlindsProps {
 
 // Re-export the untyped JSX component with proper TypeScript interface
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-const Impl = require("./GradientBlinds.jsx").default;
+const Impl = require("./GradientBlindsImpl.jsx").default;
 
 export default function GradientBlinds(props: GradientBlindsProps) {
   return <Impl {...props} />;
