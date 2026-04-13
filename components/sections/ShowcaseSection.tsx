@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Clock, Users, User, CalendarDays, Plus, Grid3X3, ChevronLeft, ChevronRight, CreditCard, Phone, Mail, Wrench, BarChart3 } from "lucide-react";
+import { MapPin, Clock, Users, User, CalendarDays, Plus, Grid3X3, ChevronLeft, ChevronRight, CreditCard, Phone, Mail, Wrench, BarChart3, LucideIcon } from "lucide-react";
+
+type CardField = { icon: LucideIcon; label: string; value: string; badge?: string };
 
 const CATEGORY_TAGS: Record<string, { emoji: string; label: string }> = {
   job: { emoji: "📋", label: "Jobs" },
@@ -278,9 +280,9 @@ export default function ShowcaseSection() {
                         <f.icon className="w-3.5 h-3.5" style={{ color: "var(--ink3)" }} />
                         <span style={{ color: "var(--ink3)" }}>{f.label}</span>
                       </div>
-                      {f.badge ? (
-                        <span style={{ display: "flex", alignItems: "center", gap: "5px", background: BADGE_COLORS[f.badge].bg, borderRadius: "100px", padding: "3px 10px", fontSize: "12px", color: BADGE_COLORS[f.badge].text }}>
-                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BADGE_COLORS[f.badge].dot }} />
+                      {(f as CardField).badge ? (
+                        <span style={{ display: "flex", alignItems: "center", gap: "5px", background: BADGE_COLORS[(f as CardField).badge!].bg, borderRadius: "100px", padding: "3px 10px", fontSize: "12px", color: BADGE_COLORS[(f as CardField).badge!].text }}>
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: BADGE_COLORS[(f as CardField).badge!].dot }} />
                           {f.value}
                         </span>
                       ) : (
