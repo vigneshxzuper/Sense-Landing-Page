@@ -5,14 +5,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: "#09090B",
-        surface: "#111113",
-        surface2: "#18181B",
-        ink: "#FAFAFA",
-        ink2: "#71717A",
-        ink3: "#3F3F46",
-        line: "rgba(255,255,255,0.07)",
-        orange: { DEFAULT: "#E85D3A", glow: "rgba(232,93,58,0.3)" },
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        surface2: "var(--surface2)",
+        ink: "var(--ink)",
+        ink2: "var(--ink2)",
+        ink3: "var(--ink3)",
+        line: "var(--line)",
+        orange: { DEFAULT: "var(--orange)", glow: "var(--orange-glow)" },
+        green: { DEFAULT: "var(--green)" },
+        red: { DEFAULT: "var(--red)" },
+        yellow: { DEFAULT: "var(--yellow)" },
       },
       fontFamily: {
         sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],

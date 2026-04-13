@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import ThemeProvider from "@/components/ThemeProvider";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,12 +15,28 @@ export const metadata: Metadata = {
   description: "Zuper Sense turns your operational data into plain-English answers — and turns those answers into action.",
 };
 
+// Inline script to prevent flash of wrong theme
+const themeScript = `
+(function(){
+  try {
+    var t = localStorage.getItem('sense-theme');
+    if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch(e) {}
+})()
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body style={{ margin: 0, background: "#09090B", color: "#FAFAFA", fontFamily: "var(--font-inter, Inter, system-ui, sans-serif)" }}>
-
-        {children}
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body>
+        <ThemeProvider>
+          <ThemeSwitcher />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

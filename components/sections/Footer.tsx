@@ -10,7 +10,7 @@ export default function Footer() {
   return (
     <footer
       style={{
-        background: "#09090B",
+        background: "var(--bg)",
         borderTop: "1px solid rgba(255,255,255,0.07)",
         padding: "80px 24px 40px",
       }}
@@ -48,13 +48,13 @@ export default function Footer() {
                 </svg>
               </div>
               <div>
-                <div style={{ fontSize: "15px", fontWeight: 700, color: "#FAFAFA", letterSpacing: "-0.02em" }}>
+                <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>
                   Zuper Sense
                 </div>
-                <div style={{ fontSize: "11px", color: "#52525B" }}>Intelligence Layer</div>
+                <div style={{ fontSize: "11px", color: "var(--ink3)" }}>Intelligence Layer</div>
               </div>
             </div>
-            <p style={{ fontSize: "13px", color: "#52525B", lineHeight: 1.7, maxWidth: "240px", marginBottom: "24px" }}>
+            <p style={{ fontSize: "13px", color: "var(--ink3)", lineHeight: 1.7, maxWidth: "240px", marginBottom: "24px" }}>
               The AI that understands your field service business — and acts on it.
             </p>
             <button
@@ -81,7 +81,7 @@ export default function Footer() {
               <div
                 style={{
                   fontSize: "11px",
-                  color: "#3F3F46",
+                  color: "var(--ink3)",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                   marginBottom: "16px",
@@ -97,7 +97,7 @@ export default function Footer() {
                   style={{
                     display: "block",
                     fontSize: "13px",
-                    color: "#52525B",
+                    color: "var(--ink3)",
                     marginBottom: "10px",
                     textDecoration: "none",
                     transition: "color 0.15s",
@@ -122,7 +122,7 @@ export default function Footer() {
             borderTop: "1px solid rgba(255,255,255,0.05)",
           }}
         >
-          <div style={{ fontSize: "12px", color: "#3F3F46" }}>
+          <div style={{ fontSize: "12px", color: "var(--ink3)" }}>
             © 2025 Zuper Inc. All rights reserved.
           </div>
           <div style={{ display: "flex", gap: "20px" }}>
@@ -132,7 +132,7 @@ export default function Footer() {
                 href="#"
                 style={{
                   fontSize: "12px",
-                  color: "#3F3F46",
+                  color: "var(--ink3)",
                   textDecoration: "none",
                   transition: "color 0.15s",
                 }}
