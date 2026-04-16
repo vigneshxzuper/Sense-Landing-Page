@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Phone, Mail, Zap, TrendingDown, ArrowRight } from "lucide-react";
+import ScrollFloat from "@/components/ScrollFloat";
 
 const STEPS = [
   { label: "Analyzing job history...", delay: 0 },
@@ -61,21 +62,21 @@ export default function ActSection() {
     border: "1px solid var(--card-border)",
     borderRadius: "14px",
     padding: "20px",
+    boxShadow: "var(--card-shadow)",
   };
 
   return (
     <section id="act-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 24px", minHeight: "100vh" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto 60px" }}>
-        <div style={{ height: "1px", background: "var(--line)" }} />
       </div>
 
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <div style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "12px" }}>
+        <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "12px" }}>
           Act.
-        </div>
-        <p style={{ fontSize: "17px", color: "var(--ink2)", maxWidth: "500px", lineHeight: 1.6, marginBottom: "60px" }}>
-          It doesn&apos;t just tell you. It does it.
-        </p>
+        </ScrollFloat>
+        <ScrollFloat as="p" style={{ fontSize: "17px", color: "var(--ink2)", maxWidth: "500px", lineHeight: 1.6, marginBottom: "60px" }}>
+          It doesn't just tell you. It does it.
+        </ScrollFloat>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
@@ -83,7 +84,7 @@ export default function ActSection() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
             {/* Agent card */}
-            <div style={cardStyle}>
+            <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(232,93,58,0.04) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(232,93,58,0.3), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
                 <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, #E85D3A, #C4472A)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 20px rgba(232,93,58,0.25)" }}>
                   <Zap className="w-5 h-5 text-white" />
@@ -139,12 +140,12 @@ export default function ActSection() {
             </div>
 
             {/* Metrics card */}
-            <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", padding: 0, overflow: "hidden", background: "var(--glass-bg)" }}>
+            <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", padding: 0, overflow: "hidden", background: "var(--glass-bg)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(34,197,94,0.25), var(--card-shadow)", position: "relative" }}>
               {[
                 { label: "DSO Target", before: "87 days", after: "44 days" },
                 { label: "Monthly Cash", before: "$38K", after: "$84K" },
               ].map((m) => (
-                <div key={m.label} style={{ background: "var(--surface)", padding: "16px" }}>
+                <div key={m.label} style={{ background: "linear-gradient(160deg, rgba(34,197,94,0.03), var(--surface) 70%)", padding: "16px" }}>
                   <div style={{ fontSize: "10px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>{m.label}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <span style={{ fontSize: "13px", color: "var(--ink3)", textDecoration: "line-through" }}>{m.before}</span>
@@ -160,7 +161,7 @@ export default function ActSection() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
             {/* Call log */}
-            <div style={{ ...cardStyle, flex: 1, opacity: showLog ? 1 : 0, transform: showLog ? "translateY(0)" : "translateY(16px)", transition: "all 0.6s cubic-bezier(0.22,1,0.36,1)" }}>
+            <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(96,165,250,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(96,165,250,0.25), var(--card-shadow)", position: "relative", overflow: "hidden", flex: 1, opacity: showLog ? 1 : 0, transform: showLog ? "translateY(0)" : "translateY(16px)", transition: "all 0.6s cubic-bezier(0.22,1,0.36,1)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
                 <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px #22C55E", animation: "blink 2s ease-in-out infinite" }} />
                 <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Ryan · Live Activity</span>
@@ -195,13 +196,16 @@ export default function ActSection() {
             {/* Result card */}
             <div
               style={{
-                background: "rgba(34,197,94,0.05)",
-                border: "1px solid rgba(34,197,94,0.15)",
+                background: "linear-gradient(160deg, rgba(34,197,94,0.06) 0%, rgba(34,197,94,0.015) 100%)",
+                border: "1px solid rgba(34,197,94,0.18)",
                 borderRadius: "14px",
                 padding: "20px",
                 opacity: showResult ? 1 : 0,
                 transform: showResult ? "translateY(0) scale(1)" : "translateY(12px) scale(0.98)",
                 transition: "all 0.6s cubic-bezier(0.22,1,0.36,1)",
+                boxShadow: "0 8px 28px -16px rgba(34,197,94,0.3)",
+                position: "relative",
+                overflow: "hidden",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>

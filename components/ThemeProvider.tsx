@@ -1,13 +1,19 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 
 type Theme = "dark" | "light";
 
-const ThemeContext = createContext<{ theme: Theme; toggle: () => void; isDark: boolean }>({
+const ThemeContext = createContext<{
+  theme: Theme;
+  toggle: () => void;
+  isDark: boolean;
+  setTheme: (t: Theme, opts?: { persist?: boolean }) => void;
+}>({
   theme: "dark",
   toggle: () => {},
   isDark: true,
+  setTheme: () => {},
 });
 
 export function useTheme() {
@@ -25,21 +31,34 @@ function getInitialTheme(): Theme {
 }
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("dark");
   const [mounted, setMounted] = useState(false);
+  const persistRef = useRef(true);
 
   // Read initial theme on mount
   useEffect(() => {
-    setTheme(getInitialTheme());
+    setThemeState(getInitialTheme());
     setMounted(true);
   }, []);
 
-  // Apply theme to DOM and persist
+  // Apply theme to DOM and (conditionally) persist
   useEffect(() => {
     if (!mounted) return;
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("sense-theme", theme);
+    const root = document.documentElement;
+    root.classList.add("theme-transitioning");
+    root.setAttribute("data-theme", theme);
+    if (persistRef.current) localStorage.setItem("sense-theme", theme);
+    persistRef.current = true;
+    const t = window.setTimeout(() => {
+      root.classList.remove("theme-transitioning");
+    }, 1100);
+    return () => window.clearTimeout(t);
   }, [theme, mounted]);
+
+  const setTheme = (t: Theme, opts?: { persist?: boolean }) => {
+    persistRef.current = opts?.persist !== false;
+    setThemeState(t);
+  };
 
   // Listen for system preference changes
   useEffect(() => {
@@ -53,11 +72,11 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  const toggle = () => setTheme(theme === "dark" ? "light" : "dark");
 
   // Prevent flash — set data-theme before first render via a script
   return (
-    <ThemeContext.Provider value={{ theme, toggle, isDark: theme === "dark" }}>
+    <ThemeContext.Provider value={{ theme, toggle, isDark: theme === "dark", setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

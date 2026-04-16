@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { MapPin, Clock, Users, User, CalendarDays, Plus, Grid3X3, ChevronLeft, ChevronRight, CreditCard, Phone, Mail, Wrench, BarChart3, LucideIcon } from "lucide-react";
+import { useRef } from "react";
+import { MapPin, Clock, Users, User, CalendarDays, Plus, Grid3X3, CreditCard, Phone, Mail, Wrench, BarChart3, LucideIcon } from "lucide-react";
+import ScrollFloat from "@/components/ScrollFloat";
 
 type CardField = { icon: LucideIcon; label: string; value: string; badge?: string };
 
@@ -148,47 +149,36 @@ const BADGE_COLORS: Record<string, { bg: string; text: string; dot: string }> = 
 const STATUS_DOT: Record<string, string> = { red: "#ef4444", orange: "#E85D3A", green: "#2d9b6f" };
 
 export default function ShowcaseSection() {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
-  const checkScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 10);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
-  };
-
-  const scroll = (dir: number) => {
-    scrollRef.current?.scrollBy({ left: dir * 360, behavior: "smooth" });
-  };
-
-  // Auto-scroll carousel
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const interval = setInterval(() => {
-      if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 10) {
-        el.scrollTo({ left: 0, behavior: "smooth" });
-      } else {
-        el.scrollBy({ left: 360, behavior: "smooth" });
-      }
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
 
   const cardBase: React.CSSProperties = {
-    background: "var(--surface)",
-    border: "1px solid var(--card-border)",
+    background: "#0c0c0e",
+    border: "1px solid rgba(255,255,255,0.06)",
     borderRadius: "18px",
     overflow: "hidden",
     width: "340px",
     minWidth: "340px",
     flexShrink: 0,
-    transition: "transform 0.3s, box-shadow 0.3s",
     cursor: "default",
+    position: "relative",
+    zIndex: 1,
+    boxShadow:
+      "0 22px 60px rgba(0,0,0,0.7), 0 8px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)",
   };
+
+  const TYPE_TINT: Record<string, { bg: string }> = {
+    job:     { bg: "linear-gradient(165deg, rgba(56,189,248,0.035) 0%, #0c0c0e 70%)" },
+    payment: { bg: "linear-gradient(165deg, rgba(245,158,11,0.04) 0%, #0c0c0e 70%)" },
+    contact: { bg: "linear-gradient(165deg, rgba(167,139,250,0.04) 0%, #0c0c0e 70%)" },
+  };
+
+  // Wrap each card with a gradient glow halo
+  const wrap = (children: React.ReactNode, key: number | string) => (
+    <div key={key} className="zuper-card-wrap">
+      <div className="zuper-card-glow" aria-hidden />
+      {children}
+    </div>
+  );
 
   const fieldRow: React.CSSProperties = {
     display: "flex",
@@ -200,59 +190,33 @@ export default function ShowcaseSection() {
   };
 
   return (
-    <section id="showcase-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 0", minHeight: "100vh", overflow: "hidden" }}>
+    <section id="showcase-section" ref={sectionRef} style={{ background: "#000", padding: "120px 0", minHeight: "100vh", overflow: "hidden" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto 56px", padding: "0 24px" }}>
-        <div style={{ height: "1px", background: "var(--line)", marginBottom: "60px" }} />
         <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.2)", borderRadius: "100px", padding: "5px 14px", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "20px" }}>
           <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#E85D3A" }} />
           Anywhere in Zuper
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "24px" }}>
           <div>
-            <h2 style={{ fontSize: "clamp(36px, 5.5vw, 60px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05, color: "var(--ink)", marginBottom: "12px" }}>
-              Entire Zuper inside a{" "}
-              <span style={{ color: "#E85D3A", fontStyle: "italic" }}>prompt box.</span>
-            </h2>
-            <p style={{ fontSize: "17px", color: "var(--ink3)", maxWidth: "520px", lineHeight: 1.6 }}>
+            <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5.5vw, 60px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05, color: "var(--ink)", marginBottom: "12px" }}>
+              Entire Zuper inside a prompt box.
+            </ScrollFloat>
+            <ScrollFloat as="p" style={{ fontSize: "17px", color: "#ffffff", maxWidth: "520px", lineHeight: 1.6 }}>
               Ask anything, from anywhere in Zuper.
-            </p>
-          </div>
-          {/* Arrows */}
-          <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-            <button onClick={() => scroll(-1)} style={{ width: "40px", height: "40px", borderRadius: "10px", background: canScrollLeft ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.02)", border: "1px solid var(--card-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s" }}>
-              <ChevronLeft className="w-5 h-5" style={{ color: canScrollLeft ? "#FAFAFA" : "#3F3F46" }} />
-            </button>
-            <button onClick={() => scroll(1)} style={{ width: "40px", height: "40px", borderRadius: "10px", background: canScrollRight ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.02)", border: "1px solid var(--card-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s" }}>
-              <ChevronRight className="w-5 h-5" style={{ color: canScrollRight ? "#FAFAFA" : "#3F3F46" }} />
-            </button>
+            </ScrollFloat>
           </div>
         </div>
       </div>
 
-      {/* Carousel */}
-      <div
-        ref={scrollRef}
-        onScroll={checkScroll}
-        style={{
-          display: "flex",
-          gap: "28px",
-          overflowX: "auto",
-          scrollSnapType: "x mandatory",
-          paddingLeft: "max(24px, calc(50vw - 450px))",
-          paddingRight: "80px",
-          paddingBottom: "8px",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
-      >
-        {CARDS.map((card, ci) => {
+      {/* Marquee carousel — continuous loop, no stop */}
+      <div className="zuper-marquee-mask">
+        <div className="zuper-marquee-track">
+          {[...CARDS, ...CARDS].map((card, ci) => {
           if (card.type === "job") {
             const tag = CATEGORY_TAGS[card.type];
-            return (
-              <div key={ci} style={{ ...cardBase, scrollSnapAlign: "start" }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
-              >
+            const tint = TYPE_TINT.job;
+            return wrap(
+              <div style={{ ...cardBase, background: tint.bg }}>
                 {/* Category tag */}
                 <div style={{ padding: "14px 20px 0" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "100px", padding: "5px 14px", fontSize: "12px", color: "var(--ink2)" }}>
@@ -291,17 +255,16 @@ export default function ShowcaseSection() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div>,
+              ci
             );
           }
 
           if (card.type === "payment") {
             const tag = CATEGORY_TAGS[card.type];
-            return (
-              <div key={ci} style={{ ...cardBase, scrollSnapAlign: "start" }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.4)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
-              >
+            const tint = TYPE_TINT.payment;
+            return wrap(
+              <div style={{ ...cardBase, background: tint.bg }}>
                 {/* Category tag */}
                 <div style={{ padding: "14px 20px 10px" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "100px", padding: "5px 14px", fontSize: "12px", color: "var(--ink2)" }}>
@@ -331,17 +294,16 @@ export default function ShowcaseSection() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div>,
+              ci
             );
           }
 
           // contact
           const ctag = CATEGORY_TAGS[card.type];
-          return (
-            <div key={ci} style={{ ...cardBase, scrollSnapAlign: "start" }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.4)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
-            >
+          const ctint = TYPE_TINT.contact;
+          return wrap(
+            <div style={{ ...cardBase, background: ctint.bg }}>
               {/* Category tag */}
               <div style={{ padding: "14px 20px 0" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "100px", padding: "5px 14px", fontSize: "12px", color: "var(--ink2)" }}>
@@ -381,13 +343,92 @@ export default function ShowcaseSection() {
                   </div>
                 ))}
               </div>
-            </div>
+            </div>,
+            ci
           );
-        })}
+          })}
+        </div>
       </div>
 
       <style>{`
         div::-webkit-scrollbar { display: none; }
+
+        .zuper-marquee-mask {
+          position: relative;
+          width: 100%;
+          overflow: hidden;
+          padding: 12px 0 24px;
+          mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+        }
+        .zuper-marquee-track {
+          display: flex;
+          gap: 28px;
+          width: max-content;
+          animation: zuper-marquee 60s linear infinite;
+          will-change: transform;
+        }
+        @keyframes zuper-marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(calc(-50% - 14px)); }
+        }
+        .zuper-card-wrap {
+          position: relative;
+          isolation: isolate;
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-self: stretch;
+        }
+        .zuper-card-wrap > div:not(.zuper-card-glow) {
+          flex: 1 1 auto;
+          height: 100%;
+        }
+        .zuper-card-glow {
+          position: absolute;
+          inset: -2px;
+          border-radius: 20px;
+          padding: 1.5px;
+          background: linear-gradient(
+            115deg,
+            rgba(232,93,58,0.85) 0%,
+            rgba(232,93,58,0.85) 38%,
+            rgba(255,220,180,1) 50%,
+            rgba(232,93,58,0.85) 62%,
+            rgba(232,93,58,0.85) 100%
+          );
+          background-size: 260% 100%;
+          background-position: 200% 0;
+          animation: zuper-shine 3.2s linear infinite;
+          opacity: 0.95;
+          z-index: 0;
+          pointer-events: none;
+          -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+                  mask-composite: exclude;
+        }
+        @keyframes zuper-shine {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -100% 0; }
+        }
+        .zuper-card-wrap::after {
+          content: "";
+          position: absolute;
+          inset: -14px;
+          border-radius: 28px;
+          background: radial-gradient(
+            ellipse at 50% 50%,
+            rgba(232,93,58,0.45) 0%,
+            rgba(232,93,58,0.18) 40%,
+            transparent 75%
+          );
+          filter: blur(28px);
+          opacity: 0.7;
+          z-index: -1;
+          pointer-events: none;
+        }
       `}</style>
     </section>
   );

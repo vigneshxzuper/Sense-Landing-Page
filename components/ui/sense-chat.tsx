@@ -77,8 +77,8 @@ export function SenseChat() {
   const handleChipClick = (topic: string) => {
     // Dispatch custom event for AnalyzeSection to pick up
     window.dispatchEvent(new CustomEvent("sense-chip-click", { detail: { topic } }));
-    // Scroll to analyze section
-    const el = document.getElementById("analyze-section");
+    // Scroll to analyze content (below the Ask block)
+    const el = document.getElementById("analyze-content");
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 

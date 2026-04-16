@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SenseChat } from "@/components/ui/sense-chat";
+import ScrollFloat from "@/components/ScrollFloat";
+import { useTheme } from "@/components/ThemeProvider";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -114,6 +116,41 @@ export default function AnalyzeSection() {
 
   const hasTriggered = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const { setTheme } = useTheme();
+
+  // Scroll-driven theme switch with hysteresis (no jitter near boundary)
+  useEffect(() => {
+    const el = document.getElementById("analyze-content");
+    if (!el) return;
+    let current: "dark" | "light" = "dark";
+    let raf = 0;
+    const check = () => {
+      raf = 0;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // Light when title rises above 35% of viewport.
+      // Dark only when it falls back below 65% — 30% dead zone kills toggling.
+      if (r.top < vh * 0.35 && current !== "light") {
+        current = "light";
+        setTheme("light", { persist: false });
+      } else if (r.top > vh * 0.65 && current !== "dark") {
+        current = "dark";
+        setTheme("dark", { persist: false });
+      }
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(check);
+    };
+    check();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [setTheme]);
 
   const triggerTopic = (t: Topic) => {
     setShowQuestion(false);
@@ -156,36 +193,38 @@ export default function AnalyzeSection() {
     border: "1px solid var(--card-border)",
     borderRadius: "16px",
     padding: "24px",
+    boxShadow: "var(--card-shadow)",
   };
 
   return (
     <section
       id="analyze-section"
       ref={sectionRef}
-      style={{ background: "var(--bg)", padding: "120px 24px", minHeight: "100vh", position: "relative" }}
+      style={{ background: "var(--bg)", padding: "0 24px", position: "relative" }}
     >
       {/* Ask — centered header + chat */}
-      <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center" }}>
-        <div style={{ marginBottom: "48px" }}>
-          <div style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "16px" }}>
-            Ask.
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "120px 0" }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center", width: "100%" }}>
+          <div style={{ marginBottom: "48px" }}>
+            <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "16px" }}>
+              Ask.
+            </ScrollFloat>
+            <ScrollFloat as="p" style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "#ffffff", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto" }}>
+              Type a question in plain English — Sense queries your data and answers instantly.
+            </ScrollFloat>
           </div>
-          <p style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "var(--ink2)", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto" }}>
-            Type a question in plain English — Sense queries your data and answers instantly.
-          </p>
-        </div>
 
-        <div style={{ marginBottom: "48px" }}>
-          <SenseChat />
+          <div>
+            <SenseChat />
+          </div>
         </div>
       </div>
 
       {/* Analyze — conversation + charts */}
-      <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <div style={{ height: "1px", background: "var(--line)", marginBottom: "60px" }} />
-        <div style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "40px" }}>
+      <div id="analyze-content" style={{ maxWidth: "900px", margin: "0 auto" }}>
+        <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "40px" }}>
           Analyze.
-        </div>
+        </ScrollFloat>
 
         {/* Chat conversation */}
         {topic && (
@@ -304,17 +343,17 @@ export default function AnalyzeSection() {
                   {/* REVENUE */}
                   {topic === "revenue" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={cardStyle}>
+                      <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(94,234,212,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(94,234,212,0.25), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
                         <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>Monthly Revenue</div>
                         <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>Revenue vs Expenses (2024)</div>
                         <div style={{ height: "280px" }}><Bar data={revenueChartData} options={chartOpts(6000) as any} /></div>
                       </div>
-                      <div style={cardStyle}>
+                      <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(232,93,58,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(232,93,58,0.25), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
                         <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>Q4 Performance</div>
                         <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "16px" }}>October through December 2024</div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "var(--glass-bg)", borderRadius: "12px", overflow: "hidden" }}>
                           {kpis.map((k) => (
-                            <div key={k.label} style={{ background: "var(--surface)", padding: "20px" }}>
+                            <div key={k.label} style={{ background: k.up ? "linear-gradient(160deg, rgba(34,197,94,0.03), var(--surface) 70%)" : "linear-gradient(160deg, rgba(239,68,68,0.03), var(--surface) 70%)", padding: "20px" }}>
                               <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>{k.value}</span>
@@ -331,7 +370,7 @@ export default function AnalyzeSection() {
 
                   {/* PERFORMANCE */}
                   {topic === "performance" && (
-                    <div style={cardStyle}>
+                    <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(74,222,128,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(74,222,128,0.25), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
                       <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>System Performance</div>
                       <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>CPU and Memory usage over time</div>
                       <div style={{ height: "300px" }}><Line data={perfChartData} options={chartOpts(100) as any} /></div>
@@ -341,7 +380,7 @@ export default function AnalyzeSection() {
                   {/* SLA */}
                   {topic === "sla" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden" }}>
+                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", background: "linear-gradient(160deg, rgba(239,68,68,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(239,68,68,0.25), var(--card-shadow)", position: "relative" }}>
                         <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 70px 70px 90px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                           <span>Job ID</span><span>Description</span><span>SLA</span><span>Actual</span><span>Status</span>
                         </div>
