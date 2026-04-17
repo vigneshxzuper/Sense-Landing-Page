@@ -5,17 +5,17 @@ import { AlertTriangle, Clock, FileText, Users, DollarSign, TrendingUp, Trending
 import ScrollFloat from "@/components/ScrollFloat";
 
 const ALERT_CARDS = [
-  { icon: FileText, label: "Stuck Quotes", value: "3", sub: "$84,000 potential revenue", detail: "Quotes sent but no response in 7+ days", color: "var(--yellow)", bg: "linear-gradient(160deg, rgba(245,158,11,0.06) 0%, rgba(245,158,11,0.01) 100%)", border: "rgba(245,158,11,0.14)", glow: "rgba(245,158,11,0.12)" },
-  { icon: Clock, label: "Jobs Behind SLA", value: "4", sub: "Mostly re-roofing jobs", detail: "Overdue by 2–5 days, SLA breach risk", color: "var(--red)", bg: "linear-gradient(160deg, rgba(239,68,68,0.06) 0%, rgba(239,68,68,0.01) 100%)", border: "rgba(239,68,68,0.14)", glow: "rgba(239,68,68,0.12)" },
-  { icon: AlertTriangle, label: "Pending Invoices", value: "6", sub: "$42,600 unbilled revenue", detail: "Jobs completed but invoices not sent", color: "#E85D3A", bg: "linear-gradient(160deg, rgba(232,93,58,0.06) 0%, rgba(232,93,58,0.01) 100%)", border: "rgba(232,93,58,0.14)", glow: "rgba(232,93,58,0.12)" },
-  { icon: Users, label: "Unassigned Jobs", value: "5", sub: "3 urgent, 2 standard", detail: "Waiting for tech assignment since yesterday", color: "#8B5CF6", bg: "linear-gradient(160deg, rgba(139,92,246,0.06) 0%, rgba(139,92,246,0.01) 100%)", border: "rgba(139,92,246,0.14)", glow: "rgba(139,92,246,0.12)" },
+  { icon: FileText, label: "Stuck Quotes", value: "3", sub: "$84,000 potential revenue", detail: "Quotes sent but no response in 7+ days", color: "#FCD34D", bg: "linear-gradient(160deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.03) 100%)", border: "rgba(245,158,11,0.28)", glow: "rgba(245,158,11,0.25)" },
+  { icon: Clock, label: "Jobs Behind SLA", value: "4", sub: "Mostly re-roofing jobs", detail: "Overdue by 2–5 days, SLA breach risk", color: "#FCA5A5", bg: "linear-gradient(160deg, rgba(239,68,68,0.12) 0%, rgba(239,68,68,0.03) 100%)", border: "rgba(239,68,68,0.28)", glow: "rgba(239,68,68,0.25)" },
+  { icon: AlertTriangle, label: "Pending Invoices", value: "6", sub: "$42,600 unbilled revenue", detail: "Jobs completed but invoices not sent", color: "#F5A788", bg: "linear-gradient(160deg, rgba(232,93,58,0.12) 0%, rgba(232,93,58,0.03) 100%)", border: "rgba(232,93,58,0.28)", glow: "rgba(232,93,58,0.25)" },
+  { icon: Users, label: "Unassigned Jobs", value: "5", sub: "3 urgent, 2 standard", detail: "Waiting for tech assignment since yesterday", color: "#C4B5FD", bg: "linear-gradient(160deg, rgba(139,92,246,0.12) 0%, rgba(139,92,246,0.03) 100%)", border: "rgba(139,92,246,0.28)", glow: "rgba(139,92,246,0.25)" },
 ];
 
 const KPI_CARDS = [
-  { label: "Revenue MTD", value: "$284,500", change: "+14.2%", up: true, icon: DollarSign, accent: "#22C55E", tint: "rgba(34,197,94,0.035)", glow: "rgba(34,197,94,0.10)" },
-  { label: "Jobs Completed", value: "142", change: "+8%", up: true, icon: BarChart3, accent: "#38BDF8", tint: "rgba(56,189,248,0.035)", glow: "rgba(56,189,248,0.10)" },
-  { label: "Active Technicians", value: "24", change: "−2", up: false, icon: Users, accent: "#A78BFA", tint: "rgba(167,139,250,0.035)", glow: "rgba(167,139,250,0.10)" },
-  { label: "Avg Response Time", value: "2.4h", change: "−18min", up: true, icon: Activity, accent: "#F59E0B", tint: "rgba(245,158,11,0.035)", glow: "rgba(245,158,11,0.10)" },
+  { label: "Revenue MTD", value: "$284,500", change: "+14.2%", up: true, icon: DollarSign, accent: "#22C55E", tint: "rgba(34,197,94,0.07)", glow: "rgba(34,197,94,0.22)" },
+  { label: "Jobs Completed", value: "142", change: "+8%", up: true, icon: BarChart3, accent: "#38BDF8", tint: "rgba(56,189,248,0.07)", glow: "rgba(56,189,248,0.22)" },
+  { label: "Active Technicians", value: "24", change: "−2", up: false, icon: Users, accent: "#A78BFA", tint: "rgba(167,139,250,0.07)", glow: "rgba(167,139,250,0.22)" },
+  { label: "Avg Response Time", value: "2.4h", change: "−18min", up: true, icon: Activity, accent: "#F59E0B", tint: "rgba(245,158,11,0.07)", glow: "rgba(245,158,11,0.22)" },
 ];
 
 const OVERDUE = [
@@ -154,8 +154,8 @@ export default function RadarSection() {
               style={{
                 ...card,
                 background: `linear-gradient(160deg, ${k.tint} 0%, var(--surface) 70%)`,
-                border: "1px solid var(--card-border)",
-                boxShadow: `0 6px 20px -14px ${k.glow}, var(--card-shadow)`,
+                border: `1px solid ${k.glow}`,
+                boxShadow: `0 10px 30px -14px ${k.glow}, var(--card-shadow)`,
                 position: "relative",
                 overflow: "hidden",
                 ...stagger(i),
@@ -219,7 +219,7 @@ export default function RadarSection() {
                   ? `0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1), 0 0 30px ${a.glow}`
                   : isDropping
                   ? `0 4px 12px rgba(0,0,0,0.3)`
-                  : `0 4px 14px -10px ${a.glow}`,
+                  : `0 10px 28px -14px ${a.glow}`,
                 transition: isLifted
                   ? "transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s, border-color 0.3s"
                   : isDropping
@@ -259,7 +259,7 @@ export default function RadarSection() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
 
           {/* Revenue chart */}
-          <div style={{ ...card, background: "linear-gradient(160deg, rgba(34,197,94,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(34,197,94,0.25), var(--card-shadow)", position: "relative", overflow: "hidden", ...stagger(8) }}>
+          <div style={{ ...card, background: "linear-gradient(160deg, rgba(34,197,94,0.06) 0%, var(--surface) 70%)", border: "1px solid rgba(34,197,94,0.18)", boxShadow: "0 12px 32px -14px rgba(34,197,94,0.28), var(--card-shadow)", position: "relative", overflow: "hidden", ...stagger(8) }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
               <div>
                 <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Revenue MTD vs Target</div>
@@ -285,7 +285,7 @@ export default function RadarSection() {
           </div>
 
           {/* Overdue invoices */}
-          <div style={{ ...card, background: "linear-gradient(160deg, rgba(239,68,68,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(239,68,68,0.25), var(--card-shadow)", position: "relative", overflow: "hidden", ...stagger(9) }}>
+          <div style={{ ...card, background: "linear-gradient(160deg, rgba(239,68,68,0.06) 0%, var(--surface) 70%)", border: "1px solid rgba(239,68,68,0.18)", boxShadow: "0 12px 32px -14px rgba(239,68,68,0.28), var(--card-shadow)", position: "relative", overflow: "hidden", ...stagger(9) }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
               <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Overdue Invoices</span>
               <span style={{ fontSize: "12px", color: "var(--red)", fontWeight: 600 }}>$38,200</span>
@@ -319,7 +319,7 @@ export default function RadarSection() {
           </div>
 
           {/* Team status */}
-          <div style={{ ...card, background: "linear-gradient(160deg, rgba(167,139,250,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(167,139,250,0.25), var(--card-shadow)", position: "relative", overflow: "hidden", ...stagger(10) }}>
+          <div style={{ ...card, background: "linear-gradient(160deg, rgba(167,139,250,0.06) 0%, var(--surface) 70%)", border: "1px solid rgba(167,139,250,0.18)", boxShadow: "0 12px 32px -14px rgba(167,139,250,0.28), var(--card-shadow)", position: "relative", overflow: "hidden", ...stagger(10) }}>
             <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>Team Status</div>
             {TEAM_STATUS.map((t, i) => (
               <div
@@ -345,7 +345,7 @@ export default function RadarSection() {
         </div>
 
         {/* Upcoming jobs — full width */}
-        <div style={{ ...card, marginTop: "16px", background: "linear-gradient(160deg, rgba(56,189,248,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(56,189,248,0.25), var(--card-shadow)", position: "relative", overflow: "hidden", ...stagger(11) }}>
+        <div style={{ ...card, marginTop: "16px", background: "linear-gradient(160deg, rgba(56,189,248,0.06) 0%, var(--surface) 70%)", border: "1px solid rgba(56,189,248,0.18)", boxShadow: "0 12px 32px -14px rgba(56,189,248,0.28), var(--card-shadow)", position: "relative", overflow: "hidden", ...stagger(11) }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
             <CalendarDays className="w-4 h-4 text-[#3F3F46]" />
             <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Upcoming Schedule</span>
@@ -355,15 +355,16 @@ export default function RadarSection() {
               <div
                 key={j.title}
                 style={{
-                  background: `linear-gradient(160deg, ${j.statusColor}08 0%, rgba(255,255,255,0.02) 70%)`,
-                  border: `1px solid ${j.statusColor}22`,
+                  background: `linear-gradient(160deg, ${j.statusColor}15 0%, rgba(255,255,255,0.03) 70%)`,
+                  border: `1px solid ${j.statusColor}40`,
                   borderRadius: "10px",
                   padding: "14px",
                   transition: "all 0.2s",
                   cursor: "default",
+                  boxShadow: `0 6px 16px -10px ${j.statusColor}40`,
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${j.statusColor}40`; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${j.statusColor}22`; e.currentTarget.style.transform = "translateY(0)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${j.statusColor}70`; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 24px -10px ${j.statusColor}60`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${j.statusColor}40`; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 6px 16px -10px ${j.statusColor}40`; }}
               >
                 <div style={{ fontSize: "13px", color: "var(--ink)", fontWeight: 500, marginBottom: "6px", lineHeight: 1.3 }}>{j.title}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>

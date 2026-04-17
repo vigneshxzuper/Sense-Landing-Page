@@ -17,13 +17,11 @@ export const metadata: Metadata = {
   description: "Zuper Sense turns your operational data into plain-English answers — and turns those answers into action.",
 };
 
-// Inline script to prevent flash of wrong theme
+// Force dark theme site-wide
 const themeScript = `
 (function(){
   try {
-    var t = localStorage.getItem('sense-theme');
-    if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', t);
+    document.documentElement.setAttribute('data-theme', 'dark');
   } catch(e) {}
 })()
 `;

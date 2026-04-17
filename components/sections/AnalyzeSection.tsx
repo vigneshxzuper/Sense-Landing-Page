@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { SenseChat } from "@/components/ui/sense-chat";
 import ScrollFloat from "@/components/ScrollFloat";
-import { useTheme } from "@/components/ThemeProvider";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -116,41 +115,6 @@ export default function AnalyzeSection() {
 
   const hasTriggered = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
-  const { setTheme } = useTheme();
-
-  // Scroll-driven theme switch with hysteresis (no jitter near boundary)
-  useEffect(() => {
-    const el = document.getElementById("analyze-content");
-    if (!el) return;
-    let current: "dark" | "light" = "dark";
-    let raf = 0;
-    const check = () => {
-      raf = 0;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      // Light when title rises above 35% of viewport.
-      // Dark only when it falls back below 65% — 30% dead zone kills toggling.
-      if (r.top < vh * 0.35 && current !== "light") {
-        current = "light";
-        setTheme("light", { persist: false });
-      } else if (r.top > vh * 0.65 && current !== "dark") {
-        current = "dark";
-        setTheme("dark", { persist: false });
-      }
-    };
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(check);
-    };
-    check();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [setTheme]);
 
   const triggerTopic = (t: Topic) => {
     setShowQuestion(false);
@@ -343,17 +307,17 @@ export default function AnalyzeSection() {
                   {/* REVENUE */}
                   {topic === "revenue" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(94,234,212,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(94,234,212,0.25), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
+                      <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(94,234,212,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(94,234,212,0.22)", boxShadow: "0 14px 36px -14px rgba(94,234,212,0.3), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
                         <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>Monthly Revenue</div>
                         <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>Revenue vs Expenses (2024)</div>
                         <div style={{ height: "280px" }}><Bar data={revenueChartData} options={chartOpts(6000) as any} /></div>
                       </div>
-                      <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(232,93,58,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(232,93,58,0.25), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
+                      <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(232,93,58,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(232,93,58,0.22)", boxShadow: "0 14px 36px -14px rgba(232,93,58,0.3), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
                         <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>Q4 Performance</div>
                         <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "16px" }}>October through December 2024</div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "var(--glass-bg)", borderRadius: "12px", overflow: "hidden" }}>
                           {kpis.map((k) => (
-                            <div key={k.label} style={{ background: k.up ? "linear-gradient(160deg, rgba(34,197,94,0.03), var(--surface) 70%)" : "linear-gradient(160deg, rgba(239,68,68,0.03), var(--surface) 70%)", padding: "20px" }}>
+                            <div key={k.label} style={{ background: k.up ? "linear-gradient(160deg, rgba(34,197,94,0.08), var(--surface) 70%)" : "linear-gradient(160deg, rgba(239,68,68,0.08), var(--surface) 70%)", padding: "20px" }}>
                               <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>{k.value}</span>
@@ -370,7 +334,7 @@ export default function AnalyzeSection() {
 
                   {/* PERFORMANCE */}
                   {topic === "performance" && (
-                    <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(74,222,128,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(74,222,128,0.25), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
+                    <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(74,222,128,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(74,222,128,0.22)", boxShadow: "0 14px 36px -14px rgba(74,222,128,0.3), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
                       <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>System Performance</div>
                       <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>CPU and Memory usage over time</div>
                       <div style={{ height: "300px" }}><Line data={perfChartData} options={chartOpts(100) as any} /></div>
@@ -380,7 +344,7 @@ export default function AnalyzeSection() {
                   {/* SLA */}
                   {topic === "sla" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", background: "linear-gradient(160deg, rgba(239,68,68,0.03) 0%, var(--surface) 70%)", border: "1px solid var(--card-border)", boxShadow: "0 6px 22px -16px rgba(239,68,68,0.25), var(--card-shadow)", position: "relative" }}>
+                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", background: "linear-gradient(160deg, rgba(239,68,68,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(239,68,68,0.22)", boxShadow: "0 14px 36px -14px rgba(239,68,68,0.3), var(--card-shadow)", position: "relative" }}>
                         <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 70px 70px 90px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                           <span>Job ID</span><span>Description</span><span>SLA</span><span>Actual</span><span>Status</span>
                         </div>

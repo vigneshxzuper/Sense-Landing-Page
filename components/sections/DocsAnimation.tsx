@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { FileText, Receipt, ClipboardList, BarChart3, PenTool, FolderOpen, Shield, Briefcase, Wrench } from "lucide-react";
+import { useRef } from "react";
+import { FileText, Receipt, ClipboardList, BarChart3, PenTool, FolderOpen, Shield, Briefcase, Wrench, LucideIcon } from "lucide-react";
 import ScrollFloat from "@/components/ScrollFloat";
-import { useScroll, useMotionValueEvent, useTransform, motion } from "framer-motion";
-import { useTheme } from "@/components/ThemeProvider";
+import { useScroll, useTransform, useSpring, motion, MotionValue } from "framer-motion";
 
 const ICONS = [
   { Icon: FileText,      label: "Quotes",      x: -280, y: -160, rot: -14 },
@@ -26,124 +25,201 @@ const GRID = [
 
 const SOLID = [true, false, true, false, true, false, true, false, true];
 
+const SPRING = { stiffness: 240, damping: 30, mass: 0.9 };
+
+type FlyingDocProps = {
+  i: number;
+  scrollYProgress: MotionValue<number>;
+  Icon: LucideIcon;
+  label: string;
+};
+
+function FlyingDoc({ i, scrollYProgress, Icon, label }: FlyingDocProps) {
+  const from = ICONS[i];
+  const to = GRID[i];
+  const solid = SOLID[i];
+
+  // Subtle per-icon stagger across scroll (±1.5% window drift)
+  const sDrift = i * 0.006;
+  const morphStart = 0.30 + sDrift;
+  const morphEnd = 0.52 + sDrift;
+
+  // Entry: fade + scale up as we scroll into the section, then stay scattered
+  const entryOpacity = useTransform(scrollYProgress, [0.02, 0.10 + sDrift], [0, 1]);
+
+  // Position morph — fromScattered → grid
+  const xRaw = useTransform(scrollYProgress, [morphStart, morphEnd], [from.x, to.x]);
+  const yRaw = useTransform(scrollYProgress, [morphStart, morphEnd], [from.y, to.y]);
+  const rotRaw = useTransform(scrollYProgress, [morphStart, morphEnd], [from.rot, 0]);
+  // Scale: entry 0.7→1, dwell scattered, then morph 1→0.58
+  const scaleRaw = useTransform(
+    scrollYProgress,
+    [0.02, 0.10, morphStart, morphEnd],
+    [0.7, 1, 1, 0.58]
+  );
+
+  const x = useSpring(xRaw, SPRING);
+  const y = useSpring(yRaw, SPRING);
+  const rotate = useSpring(rotRaw, SPRING);
+  const scale = useSpring(scaleRaw, SPRING);
+
+  // Cross-fade paper bg → logo square
+  const paperOpacity = useTransform(
+    scrollYProgress,
+    [morphStart + 0.04, morphStart + 0.22],
+    [1, 0]
+  );
+  const squareOpacity = useTransform(
+    scrollYProgress,
+    [morphStart + 0.08, morphEnd],
+    [0, 1]
+  );
+
+  // Icon + label fade just before morph starts (so paper empties before square arrives)
+  const iconOpacity = useTransform(
+    scrollYProgress,
+    [morphStart, morphStart + 0.12],
+    [1, 0]
+  );
+  const labelOpacity = useTransform(
+    scrollYProgress,
+    [morphStart - 0.08, morphStart + 0.02],
+    [1, 0]
+  );
+
+  // Logo bloom: extra glow strength as morph lands
+  const bloom = useTransform(
+    scrollYProgress,
+    [morphEnd, Math.min(morphEnd + 0.10, 0.96)],
+    [0, 1]
+  );
+  const bloomSpread = useTransform(bloom, (v) => 10 + v * 16);
+  const bloomAlpha = useTransform(bloom, (v) => 0.45 + v * 0.25);
+  const boxShadow = useTransform(
+    [bloomSpread, bloomAlpha] as [MotionValue<number>, MotionValue<number>],
+    ([sp, al]: number[]) =>
+      solid
+        ? `0 ${sp}px ${sp * 2.6}px rgba(232,93,58,${al.toFixed(3)}), inset 0 2px 0 rgba(255,255,255,0.32), inset 0 -3px 6px rgba(0,0,0,0.18)`
+        : `0 ${Math.round(sp * 0.5)}px ${Math.round(sp * 1.2)}px rgba(232,93,58,${(al * 0.35).toFixed(3)}), inset 0 1px 0 rgba(255,255,255,0.1)`
+  );
+
+  return (
+    <motion.div
+      style={{
+        position: "absolute",
+        width: "80px",
+        height: "80px",
+        x,
+        y,
+        rotate,
+        scale,
+        opacity: entryOpacity,
+        willChange: "transform, opacity",
+      }}
+    >
+      {/* Paper card (initial state) */}
+      <motion.div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "20px",
+          background: "linear-gradient(145deg, rgba(232,93,58,0.14) 0%, rgba(232,93,58,0.05) 100%)",
+          border: "1px solid rgba(232,93,58,0.22)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          boxShadow: "0 16px 36px -14px rgba(232,93,58,0.35), inset 0 1px 0 rgba(255,255,255,0.1)",
+          opacity: paperOpacity,
+        }}
+      />
+
+      {/* Logo square (final state) */}
+      <motion.div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: "22%",
+          background: solid
+            ? "linear-gradient(145deg, #F27454 0%, #D24B2A 100%)"
+            : "linear-gradient(145deg, rgba(232,93,58,0.26) 0%, rgba(232,93,58,0.12) 100%)",
+          border: solid ? "1px solid rgba(255,170,140,0.55)" : "1px solid rgba(232,93,58,0.22)",
+          opacity: squareOpacity,
+          boxShadow,
+        }}
+      >
+        {solid && (
+          <div
+            style={{
+              position: "absolute",
+              top: "8%",
+              left: "14%",
+              right: "14%",
+              height: "36%",
+              borderRadius: "40% 40% 60% 60%",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+        )}
+      </motion.div>
+
+      {/* Icon glyph */}
+      <motion.div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: iconOpacity,
+          pointerEvents: "none",
+        }}
+      >
+        <Icon style={{ width: "28px", height: "28px", color: "#E85D3A", strokeWidth: 1.5 }} />
+      </motion.div>
+
+      {/* Label */}
+      <motion.span
+        style={{
+          position: "absolute",
+          bottom: "-22px",
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          fontSize: "10px",
+          color: "var(--ink2)",
+          whiteSpace: "nowrap",
+          opacity: labelOpacity,
+          letterSpacing: "0.02em",
+        }}
+      >
+        {label}
+      </motion.span>
+    </motion.div>
+  );
+}
+
 export default function DocsAnimation() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [phase, setPhase] = useState<"idle" | "scattered" | "converging" | "logo">("idle");
-  const { setTheme } = useTheme();
-
-  // Scroll-driven theme: dark from Docs section onward, with hysteresis dead-zone
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    let current: "dark" | "light" = "light";
-    let raf = 0;
-    const check = () => {
-      raf = 0;
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      if (r.top < vh * 0.35 && current !== "dark") {
-        current = "dark";
-        setTheme("dark", { persist: false });
-      } else if (r.top > vh * 0.65 && current !== "light") {
-        current = "light";
-        setTheme("light", { persist: false });
-      }
-    };
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(check);
-    };
-    check();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, [setTheme]);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"],
   });
 
-  useMotionValueEvent(scrollYProgress, "change", (v) => {
-    if (v < 0.22) setPhase("idle");
-    else if (v < 0.5) setPhase("scattered");
-    else if (v < 0.82) setPhase("converging");
-    else setPhase("logo");
-  });
-
   const auroraY = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
   const auroraOpacity = useTransform(
     scrollYProgress,
-    [0.1, 0.4, 0.85, 1],
+    [0.04, 0.18, 0.88, 1],
     [0, 0.9, 1, 0.4]
   );
   const grainOpacity = useTransform(
     scrollYProgress,
-    [0.1, 0.4, 0.9],
+    [0.04, 0.18, 0.9],
     [0, 0.35, 0.35]
   );
 
-  const getIconStyle = (i: number): React.CSSProperties => {
-    const icon = ICONS[i];
-    const target = GRID[i];
-    const solid = SOLID[i];
-
-    if (phase === "idle") {
-      return {
-        transform: `translate(${icon.x}px, ${icon.y}px) rotate(${icon.rot}deg) scale(0.8)`,
-        opacity: 0,
-        transition: "none",
-      };
-    }
-
-    if (phase === "scattered") {
-      return {
-        transform: `translate(${icon.x}px, ${icon.y}px) rotate(${icon.rot}deg) scale(1)`,
-        opacity: 1,
-        background: "linear-gradient(145deg, rgba(232,93,58,0.12) 0%, rgba(232,93,58,0.05) 100%)",
-        borderColor: "rgba(232,93,58,0.1)",
-        boxShadow: "0 20px 40px rgba(232,93,58,0.12), inset 0 1px 0 rgba(255,255,255,0.1)",
-        transition: `all 0.8s ${i * 0.06}s cubic-bezier(0.22,1,0.36,1)`,
-      };
-    }
-
-    if (phase === "converging") {
-      return {
-        transform: `translate(${target.x}px, ${target.y}px) rotate(0deg) scale(0.58)`,
-        opacity: 1,
-        borderRadius: "26%",
-        background: solid
-          ? "linear-gradient(145deg, rgba(232,93,58,0.7) 0%, rgba(200,65,30,0.5) 100%)"
-          : "linear-gradient(145deg, rgba(232,93,58,0.18) 0%, rgba(232,93,58,0.08) 100%)",
-        borderColor: solid ? "rgba(255,150,120,0.4)" : "rgba(232,93,58,0.15)",
-        boxShadow: solid
-          ? "0 8px 24px rgba(232,93,58,0.35), inset 0 2px 0 rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.15)"
-          : "0 4px 12px rgba(232,93,58,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
-        transition: `all 1.2s ${i * 0.05}s cubic-bezier(0.22,1,0.36,1)`,
-      };
-    }
-
-    // logo phase — same as converging but with stronger glow
-    return {
-      transform: `translate(${target.x}px, ${target.y}px) rotate(0deg) scale(0.58)`,
-      opacity: 1,
-      borderRadius: "26%",
-      background: solid
-        ? "linear-gradient(145deg, rgba(232,93,58,0.85) 0%, rgba(200,65,30,0.65) 100%)"
-        : "linear-gradient(145deg, rgba(232,93,58,0.22) 0%, rgba(232,93,58,0.10) 100%)",
-      borderColor: solid ? "rgba(255,150,120,0.5)" : "rgba(232,93,58,0.18)",
-      boxShadow: solid
-        ? "0 10px 30px rgba(232,93,58,0.45), inset 0 2px 0 rgba(255,255,255,0.3), inset 0 -3px 6px rgba(0,0,0,0.15)"
-        : "0 6px 16px rgba(232,93,58,0.12), inset 0 1px 0 rgba(255,255,255,0.12)",
-      transition: `all 0.6s ${i * 0.03}s cubic-bezier(0.22,1,0.36,1)`,
-    };
-  };
-
-  const converged = phase === "converging" || phase === "logo";
+  const headlineOpacity = useTransform(scrollYProgress, [0.54, 0.66], [0, 1]);
+  const headlineY = useTransform(scrollYProgress, [0.54, 0.66], [20, 0]);
 
   return (
     <section
@@ -161,11 +237,7 @@ export default function DocsAnimation() {
         overflow: "hidden",
       }}
     >
-      {/* Divider */}
-      <div style={{ position: "absolute", top: "120px", left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "900px", padding: "0 24px" }}>
-      </div>
-
-      {/* Aurora illustration (scroll-linked) */}
+      {/* Aurora illustration */}
       <motion.svg
         aria-hidden
         viewBox="0 0 800 800"
@@ -199,15 +271,6 @@ export default function DocsAnimation() {
           </radialGradient>
           <filter id="docs-soft" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="42" />
-          </filter>
-          <filter id="docs-grain">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.9"
-              numOctaves="2"
-              seed="7"
-            />
-            <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.18 0" />
           </filter>
         </defs>
         <g filter="url(#docs-soft)" style={{ mixBlendMode: "screen" }}>
@@ -261,80 +324,22 @@ export default function DocsAnimation() {
         }}
       >
         {ICONS.map((item, i) => (
-          <div
+          <FlyingDoc
             key={i}
-            style={{
-              position: "absolute",
-              width: "80px",
-              height: "80px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "1px solid rgba(232,93,58,0.1)",
-              borderRadius: "20px",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              willChange: "transform, opacity",
-              overflow: "hidden",
-              ...getIconStyle(i),
-            }}
-          >
-            {/* Specular highlight */}
-            <div
-              style={{
-                position: "absolute",
-                top: "8%",
-                left: "14%",
-                right: "14%",
-                height: "35%",
-                borderRadius: "40% 40% 60% 60%",
-                background: "linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%)",
-                opacity: converged ? (SOLID[i] ? 0.45 : 0.18) : 0,
-                transition: "opacity 0.8s",
-                pointerEvents: "none",
-              }}
-            />
-            {/* Icon */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "4px",
-                zIndex: 1,
-                opacity: converged ? 0 : 1,
-                transition: "opacity 0.6s",
-              }}
-            >
-              <item.Icon style={{ width: "28px", height: "28px", color: "#E85D3A", strokeWidth: 1.5 }} />
-            </div>
-            {/* Label */}
-            <span
-              style={{
-                position: "absolute",
-                bottom: "-22px",
-                fontSize: "10px",
-                color: "var(--ink3)",
-                whiteSpace: "nowrap",
-                zIndex: 1,
-                opacity: converged ? 0 : 1,
-                transition: "opacity 0.4s",
-              }}
-            >
-              {item.label}
-            </span>
-          </div>
+            i={i}
+            scrollYProgress={scrollYProgress}
+            Icon={item.Icon}
+            label={item.label}
+          />
         ))}
       </div>
 
       {/* Headline */}
-      <div
+      <motion.div
         style={{
           textAlign: "center",
-          opacity: phase !== "idle" ? 1 : 0,
-          transform: phase !== "idle" ? "translateY(0)" : "translateY(20px)",
-          transition: "all 0.8s 0.3s cubic-bezier(0.22,1,0.36,1)",
+          opacity: headlineOpacity,
+          y: headlineY,
           position: "relative",
           zIndex: 5,
         }}
@@ -342,10 +347,10 @@ export default function DocsAnimation() {
         <ScrollFloat as="h2" style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 700, letterSpacing: "-0.04em", color: "var(--ink)", lineHeight: 1.1, marginBottom: "12px" }}>
           Every document. Every insight. One place.
         </ScrollFloat>
-        <ScrollFloat as="p" style={{ fontSize: "16px", color: "#ffffff", maxWidth: "480px", margin: "0 auto", lineHeight: 1.6 }}>
+        <ScrollFloat as="p" style={{ fontSize: "16px", color: "var(--ink2)", maxWidth: "480px", margin: "0 auto", lineHeight: 1.6 }}>
           Quotes, invoices, work orders, contracts — Sense ingests it all and turns it into answers you can act on.
         </ScrollFloat>
-      </div>
+      </motion.div>
     </section>
   );
 }

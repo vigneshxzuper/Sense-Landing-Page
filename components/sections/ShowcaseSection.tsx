@@ -166,10 +166,10 @@ export default function ShowcaseSection() {
       "0 22px 60px rgba(0,0,0,0.7), 0 8px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)",
   };
 
-  const TYPE_TINT: Record<string, { bg: string }> = {
-    job:     { bg: "linear-gradient(165deg, rgba(56,189,248,0.035) 0%, #0c0c0e 70%)" },
-    payment: { bg: "linear-gradient(165deg, rgba(245,158,11,0.04) 0%, #0c0c0e 70%)" },
-    contact: { bg: "linear-gradient(165deg, rgba(167,139,250,0.04) 0%, #0c0c0e 70%)" },
+  const TYPE_TINT: Record<string, { bg: string; border: string }> = {
+    job:     { bg: "linear-gradient(165deg, rgba(56,189,248,0.08) 0%, #141417 65%)", border: "rgba(56,189,248,0.18)" },
+    payment: { bg: "linear-gradient(165deg, rgba(245,158,11,0.09) 0%, #141417 65%)", border: "rgba(245,158,11,0.18)" },
+    contact: { bg: "linear-gradient(165deg, rgba(167,139,250,0.09) 0%, #141417 65%)", border: "rgba(167,139,250,0.18)" },
   };
 
   // Wrap each card with a gradient glow halo
@@ -216,7 +216,7 @@ export default function ShowcaseSection() {
             const tag = CATEGORY_TAGS[card.type];
             const tint = TYPE_TINT.job;
             return wrap(
-              <div style={{ ...cardBase, background: tint.bg }}>
+              <div style={{ ...cardBase, background: tint.bg, border: `1px solid ${tint.border}` }}>
                 {/* Category tag */}
                 <div style={{ padding: "14px 20px 0" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "100px", padding: "5px 14px", fontSize: "12px", color: "var(--ink2)" }}>
@@ -264,7 +264,7 @@ export default function ShowcaseSection() {
             const tag = CATEGORY_TAGS[card.type];
             const tint = TYPE_TINT.payment;
             return wrap(
-              <div style={{ ...cardBase, background: tint.bg }}>
+              <div style={{ ...cardBase, background: tint.bg, border: `1px solid ${tint.border}` }}>
                 {/* Category tag */}
                 <div style={{ padding: "14px 20px 10px" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "100px", padding: "5px 14px", fontSize: "12px", color: "var(--ink2)" }}>
@@ -303,7 +303,7 @@ export default function ShowcaseSection() {
           const ctag = CATEGORY_TAGS[card.type];
           const ctint = TYPE_TINT.contact;
           return wrap(
-            <div style={{ ...cardBase, background: ctint.bg }}>
+            <div style={{ ...cardBase, background: ctint.bg, border: `1px solid ${ctint.border}` }}>
               {/* Category tag */}
               <div style={{ padding: "14px 20px 0" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "100px", padding: "5px 14px", fontSize: "12px", color: "var(--ink2)" }}>
