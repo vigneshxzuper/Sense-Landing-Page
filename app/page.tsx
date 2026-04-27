@@ -8,7 +8,7 @@ import Footer from "@/components/sections/Footer";
 
 export default function Page() {
   return (
-    <main style={{ background: "var(--bg)", overflowX: "hidden", transition: "background-color 0.5s" }}>
+    <main style={{ background: "var(--bg)", overflowX: "clip", transition: "background-color 0.5s" }}>
       <HeroSection />
       <AnalyzeSection />
       <ActSection />
