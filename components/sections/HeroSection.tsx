@@ -163,7 +163,7 @@ export default function HeroSection() {
           }}
         >
           <VariableProximity
-            label="Your business,"
+            label="Command center for"
             containerRef={headlineRef}
             radius={260}
             falloff="linear"
@@ -172,7 +172,7 @@ export default function HeroSection() {
           />
           <br />
           <VariableProximity
-            label="finally speaking."
+            label="your roofing operation."
             className="hero-italic"
             containerRef={headlineRef}
             radius={260}
@@ -205,8 +205,7 @@ export default function HeroSection() {
             transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.24s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.24s, color 0.5s, text-shadow 0.5s",
           }}
         >
-          Zuper Sense turns your operational data into plain-English
-          answers&nbsp;&mdash; and turns those answers into action.
+          Type a question, get an answer, deploy an agent.
         </p>
 
         {/* CTA row */}
@@ -223,13 +222,13 @@ export default function HeroSection() {
         >
           {[
             {
-              label: "Try Sense",
+              label: "Request early access",
               href: "#analyze-section",
               icon: <Sparkles style={{ width: 14, height: 14 }} />,
               variant: "primary" as const,
             },
             {
-              label: "Documentation",
+              label: "Watch a demo",
               href: "#docs-section",
               icon: <BookOpen style={{ width: 14, height: 14 }} />,
               variant: "secondary" as const,
