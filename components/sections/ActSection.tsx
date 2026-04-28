@@ -58,11 +58,11 @@ export default function ActSection() {
   }, [started]);
 
   const cardStyle: React.CSSProperties = {
-    background: "var(--surface)",
+    background: "var(--surface2)",
     border: "1px solid var(--card-border)",
     borderRadius: "14px",
     padding: "20px",
-    boxShadow: "var(--card-shadow)",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.35), 0 8px 32px -8px rgba(0,0,0,0.25)",
   };
 
   return (
@@ -74,9 +74,9 @@ export default function ActSection() {
         <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "12px" }}>
           Act.
         </ScrollFloat>
-        <ScrollFloat as="p" style={{ fontSize: "17px", color: "var(--ink2)", maxWidth: "500px", lineHeight: 1.6, marginBottom: "60px" }}>
+        <p style={{ fontSize: "17px", color: "var(--ink2)", maxWidth: "500px", lineHeight: 1.6, marginBottom: "60px" }}>
           It doesn't just tell you. It does it.
-        </ScrollFloat>
+        </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
@@ -84,7 +84,7 @@ export default function ActSection() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
             {/* Agent card */}
-            <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(232,93,58,0.09) 0%, var(--surface) 70%)", border: "1px solid rgba(232,93,58,0.22)", boxShadow: "0 14px 36px -14px rgba(232,93,58,0.35), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
+            <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(232,93,58,0.13) 0%, var(--surface2) 100%)", border: "1px solid rgba(232,93,58,0.30)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(232,93,58,0.18)", position: "relative", overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
                 <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, #E85D3A, #C4472A)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 20px rgba(232,93,58,0.25)" }}>
                   <Zap className="w-5 h-5 text-white" />
@@ -140,12 +140,12 @@ export default function ActSection() {
             </div>
 
             {/* Metrics card */}
-            <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", padding: 0, overflow: "hidden", background: "rgba(34,197,94,0.14)", border: "1px solid rgba(34,197,94,0.22)", boxShadow: "0 14px 36px -14px rgba(34,197,94,0.3), var(--card-shadow)", position: "relative" }}>
+            <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", padding: 0, overflow: "hidden", background: "var(--surface2)", border: "1px solid rgba(34,197,94,0.28)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(34,197,94,0.16)", position: "relative" }}>
               {[
                 { label: "DSO Target", before: "87 days", after: "44 days" },
                 { label: "Monthly Cash", before: "$38K", after: "$84K" },
               ].map((m) => (
-                <div key={m.label} style={{ background: "linear-gradient(160deg, rgba(34,197,94,0.06), var(--surface) 70%)", padding: "16px" }}>
+                <div key={m.label} style={{ background: "linear-gradient(160deg, rgba(34,197,94,0.10), var(--surface2) 70%)", padding: "16px" }}>
                   <div style={{ fontSize: "10px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>{m.label}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <span style={{ fontSize: "13px", color: "var(--ink3)", textDecoration: "line-through" }}>{m.before}</span>
@@ -161,7 +161,7 @@ export default function ActSection() {
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
             {/* Call log */}
-            <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(96,165,250,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(96,165,250,0.22)", boxShadow: "0 14px 36px -14px rgba(96,165,250,0.3), var(--card-shadow)", position: "relative", overflow: "hidden", flex: 1, opacity: showLog ? 1 : 0, transform: showLog ? "translateY(0)" : "translateY(16px)", transition: "all 0.6s cubic-bezier(0.22,1,0.36,1)" }}>
+            <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(96,165,250,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(96,165,250,0.28)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(96,165,250,0.16)", position: "relative", overflow: "hidden", flex: 1, opacity: showLog ? 1 : 0, transform: showLog ? "translateY(0)" : "translateY(16px)", transition: "all 0.6s cubic-bezier(0.22,1,0.36,1)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
                 <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px #22C55E", animation: "blink 2s ease-in-out infinite" }} />
                 <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Ryan · Live Activity</span>
@@ -196,14 +196,14 @@ export default function ActSection() {
             {/* Result card */}
             <div
               style={{
-                background: "linear-gradient(160deg, rgba(34,197,94,0.14) 0%, rgba(34,197,94,0.04) 100%)",
-                border: "1px solid rgba(34,197,94,0.30)",
+                background: "linear-gradient(160deg, rgba(34,197,94,0.16) 0%, var(--surface2) 100%)",
+                border: "1px solid rgba(34,197,94,0.32)",
                 borderRadius: "14px",
                 padding: "20px",
                 opacity: showResult ? 1 : 0,
                 transform: showResult ? "translateY(0) scale(1)" : "translateY(12px) scale(0.98)",
                 transition: "all 0.6s cubic-bezier(0.22,1,0.36,1)",
-                boxShadow: "0 14px 40px -14px rgba(34,197,94,0.4)",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(34,197,94,0.20)",
                 position: "relative",
                 overflow: "hidden",
               }}

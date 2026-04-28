@@ -201,9 +201,9 @@ export default function ShowcaseSection() {
             <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5.5vw, 60px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05, color: "var(--ink)", marginBottom: "12px" }}>
               Entire Zuper inside a prompt box.
             </ScrollFloat>
-            <ScrollFloat as="p" style={{ fontSize: "17px", color: "#ffffff", maxWidth: "520px", lineHeight: 1.6 }}>
+            <p style={{ fontSize: "17px", color: "#ffffff", maxWidth: "520px", lineHeight: 1.6 }}>
               Ask anything, from anywhere in Zuper.
-            </ScrollFloat>
+            </p>
           </div>
         </div>
       </div>

@@ -6,7 +6,6 @@ import type { ComponentType } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import type { GradientBlindsProps } from "../GradientBlinds";
 import { Sparkles, BookOpen } from "lucide-react";
-import VariableProximity from "@/components/VariableProximity";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 
 const GradientBlinds = dynamic<GradientBlindsProps>(
@@ -22,7 +21,6 @@ export default function HeroSection() {
   const isDark = theme === "dark";
   const [mounted, setMounted] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
-  const headlineRef = useRef<HTMLHeadingElement>(null);
   const reduce = useReducedMotion();
 
   const { scrollYProgress } = useScroll({
@@ -142,67 +140,41 @@ export default function HeroSection() {
 
         {/* Headline */}
         <h1
-          ref={headlineRef}
           style={{
-            fontSize: "clamp(52px, 9vw, 100px)",
+            fontSize: "clamp(48px, 7.5vw, 96px)",
             fontWeight: 500,
-            letterSpacing: "-0.04em",
-            lineHeight: 1.02,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.05,
             textAlign: "center",
-            maxWidth: "880px",
+            maxWidth: "1100px",
             marginBottom: "24px",
-            color: "var(--ink)",
-            textShadow: isDark
-              ? "0 2px 20px rgba(0,0,0,0.6), 0 4px 40px rgba(0,0,0,0.3)"
-              : "none",
+            color: "#FFFFFF",
+            fontFeatureSettings: '"ss01", "cv11"',
+            textShadow: "0 1px 8px rgba(0,0,0,0.22)",
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(24px)",
-            transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.12s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.12s, text-shadow 0.5s, color 0.5s",
-            cursor: "default",
-            position: "relative",
+            transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.12s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.12s, color 0.5s",
           }}
         >
-          <VariableProximity
-            label="Command center for"
-            containerRef={headlineRef}
-            radius={260}
-            falloff="linear"
-            fromFontVariationSettings="'wght' 560, 'opsz' 40"
-            toFontVariationSettings="'wght' 900, 'opsz' 144"
-          />
+          Command center for
           <br />
-          <VariableProximity
-            label="your roofing operation."
-            className="hero-italic"
-            containerRef={headlineRef}
-            radius={260}
-            falloff="linear"
-            fromFontVariationSettings="'wght' 560, 'opsz' 40"
-            toFontVariationSettings="'wght' 900, 'opsz' 144"
-            style={{
-              fontStyle: "italic",
-              color: isDark ? "#FFFFFF" : "#E85D3A",
-              textShadow: isDark
-                ? "0 0 40px rgba(255,255,255,0.2), 0 2px 10px rgba(0,0,0,0.5)"
-                : "0 1px 4px rgba(232,93,58,0.2)",
-              transition: "color 0.5s, text-shadow 0.5s",
-            }}
-          />
+          <span style={{ whiteSpace: "nowrap" }}>
+            your roofing operation.
+          </span>
         </h1>
 
         {/* Subtitle */}
         <p
           style={{
-            fontSize: "clamp(17px, 2vw, 20px)",
-            color: "#ffffff",
+            fontSize: "clamp(18px, 2.2vw, 22px)",
+            color: "rgba(255,255,255,0.88)",
             textAlign: "center",
-            maxWidth: "540px",
-            lineHeight: 1.65,
-            fontWeight: 500,
-            textShadow: isDark ? "0 2px 12px rgba(0,0,0,0.5)" : "none",
+            maxWidth: "36rem",
+            lineHeight: 1.55,
+            fontWeight: 450,
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(20px)",
-            transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.24s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.24s, color 0.5s, text-shadow 0.5s",
+            transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.24s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.24s, color 0.5s",
           }}
         >
           Type a question, get an answer, deploy an agent.
@@ -280,11 +252,11 @@ export default function HeroSection() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "8px",
-                    padding: "10px 22px",
+                    padding: "14px 32px",
                     borderRadius: "999px",
                     background: innerBg,
                     color: innerColor,
-                    fontSize: "13.5px",
+                    fontSize: "16px",
                     fontWeight: 500,
                     textDecoration: "none",
                     letterSpacing: "-0.005em",

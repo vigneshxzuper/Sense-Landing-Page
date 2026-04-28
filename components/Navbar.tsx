@@ -39,15 +39,15 @@ export default function Navbar() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          height: "52px",
+          height: "68px",
           padding: "0 6px 0 20px",
           borderRadius: "14px",
           background: isDark
-            ? "rgba(255,255,255,0.05)"
+            ? "rgba(12,12,14,0.82)"
             : "rgba(255,255,255,0.55)",
           backdropFilter: "blur(24px) saturate(160%)",
           WebkitBackdropFilter: "blur(24px) saturate(160%)",
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+          border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.06)"}`,
           boxShadow: isDark
             ? "0 4px 32px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)"
             : "0 4px 32px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.7)",
@@ -98,22 +98,18 @@ export default function Navbar() {
                 textDecoration: "none",
                 padding: "6px 12px",
                 borderRadius: "8px",
-                transition: "color 0.15s, background 0.15s",
+                transition: "background 0.15s, transform 0.15s",
                 whiteSpace: "nowrap",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = isDark
-                  ? "rgba(255,255,255,0.95)"
-                  : "rgba(0,0,0,0.9)";
                 e.currentTarget.style.background = isDark
-                  ? "rgba(255,255,255,0.06)"
-                  : "rgba(0,0,0,0.04)";
+                  ? "rgba(255,255,255,0.07)"
+                  : "rgba(0,0,0,0.05)";
+                e.currentTarget.style.transform = "translateY(-1px)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = isDark
-                  ? "rgba(255,255,255,0.5)"
-                  : "rgba(0,0,0,0.45)";
                 e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.transform = "translateY(0)";
               }}
             >
               {link.label}

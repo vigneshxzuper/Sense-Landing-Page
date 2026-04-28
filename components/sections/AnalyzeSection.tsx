@@ -173,9 +173,9 @@ export default function AnalyzeSection() {
             <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "16px" }}>
               Ask.
             </ScrollFloat>
-            <ScrollFloat as="p" style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "#ffffff", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto" }}>
+            <p style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "#ffffff", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto" }}>
               Type a question in plain English — Sense queries your data and answers instantly.
-            </ScrollFloat>
+            </p>
           </div>
 
           <div>
