@@ -39,9 +39,9 @@ function useAutoResizeTextarea({
 const TYPED_TEXT = "Show me my overdue invoices";
 
 const CHIPS = [
-  { label: "Team performance this week", topic: "performance" },
-  { label: "Why are SLAs slipping?", topic: "sla" },
-  { label: "Revenue this month", topic: "revenue" },
+  { label: "Aging supplements by carrier", topic: "performance" },
+  { label: "Estimates over $25K that need follow-up", topic: "sla" },
+  { label: "Calls I missed yesterday", topic: "revenue" },
 ] as const;
 
 export type AnalyzeTopic = "performance" | "sla" | "revenue" | null;
@@ -144,26 +144,58 @@ export function SenseChat() {
         </div>
 
         {/* Chips */}
-        <div className="flex items-center justify-center gap-2 mt-5 flex-wrap">
+        <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
           {CHIPS.map((c) => (
             <button
               key={c.topic}
               type="button"
               onClick={() => handleChipClick(c.topic)}
               className={cn(
-                "px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 cursor-pointer",
-                "text-zinc-800 hover:text-zinc-900"
+                "sense-chip px-3.5 py-2 rounded-full text-[12.5px] font-medium cursor-pointer whitespace-nowrap",
+                isDark ? "sense-chip-dark text-zinc-300" : "sense-chip-light text-zinc-700"
               )}
-              style={{
-                background: "rgba(255,255,255,0.92)",
-                border: "1px solid rgba(255,255,255,0.95)",
-                borderRadius: "12px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08)",
-              }}
             >
               {c.label}
             </button>
           ))}
+          <style jsx>{`
+            .sense-chip {
+              transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+                background 0.2s ease, border-color 0.2s ease,
+                color 0.2s ease, box-shadow 0.2s ease;
+              backdrop-filter: blur(8px);
+              -webkit-backdrop-filter: blur(8px);
+            }
+            .sense-chip-dark {
+              background: rgba(255, 255, 255, 0.04);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .sense-chip-dark:hover {
+              background: rgba(232, 93, 58, 0.12);
+              border-color: rgba(232, 93, 58, 0.45);
+              color: #fff;
+              transform: translateY(-1px);
+              box-shadow: 0 6px 20px rgba(232, 93, 58, 0.18),
+                0 0 0 1px rgba(232, 93, 58, 0.15);
+            }
+            .sense-chip-dark:active {
+              transform: translateY(0);
+            }
+            .sense-chip-light {
+              background: rgba(0, 0, 0, 0.03);
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            }
+            .sense-chip-light:hover {
+              background: rgba(232, 93, 58, 0.08);
+              border-color: rgba(232, 93, 58, 0.4);
+              color: #18181b;
+              transform: translateY(-1px);
+              box-shadow: 0 6px 20px rgba(232, 93, 58, 0.15);
+            }
+            .sense-chip-light:active {
+              transform: translateY(0);
+            }
+          `}</style>
         </div>
       </div>
     </div>

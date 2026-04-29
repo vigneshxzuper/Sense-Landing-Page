@@ -18,20 +18,112 @@ import { Bar, Line } from "react-chartjs-2";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Tooltip, Legend, Filler);
 
+function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; parallax: number }) {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
+        zIndex: 0,
+        overflow: "hidden",
+        transform: `translateY(${parallax + 35}px)`,
+        willChange: "transform",
+      }}
+    >
+      <div
+        style={{
+          width: "min(1320px, 94%)",
+          position: "relative",
+          opacity: revealed ? 1 : 0,
+          transform: revealed
+            ? "translateY(0) scale(1)"
+            : "translateY(40px) scale(0.97)",
+          transition:
+            "opacity 900ms cubic-bezier(0.32, 0.72, 0, 1), transform 1100ms cubic-bezier(0.32, 0.72, 0, 1)",
+          willChange: "transform, opacity",
+        }}
+      >
+      {/* Glass fill matching window frame */}
+      <div
+        style={{
+          position: "absolute",
+          left: "1.25%",
+          top: "4.124%",
+          right: "1.25%",
+          bottom: "4.124%",
+          borderRadius: "22px",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.025) 50%, rgba(255,255,255,0.015) 100%)",
+          backdropFilter: "blur(22px) saturate(160%)",
+          WebkitBackdropFilter: "blur(22px) saturate(160%)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.15)",
+          pointerEvents: "none",
+        }}
+      />
+      <svg
+        viewBox="0 0 1600 970"
+        preserveAspectRatio="xMidYMid meet"
+        style={{
+          width: "100%",
+          height: "auto",
+          display: "block",
+          filter:
+            "drop-shadow(0 0 0.5px rgba(255,255,255,0.6)) drop-shadow(0 0 6px rgba(255,255,255,0.28)) drop-shadow(0 0 18px rgba(255,255,255,0.16)) drop-shadow(0 0 40px rgba(255,255,255,0.08))",
+          maskImage:
+            "radial-gradient(ellipse 95% 95% at center, #000 75%, rgba(0,0,0,0.35) 100%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 95% 95% at center, #000 75%, rgba(0,0,0,0.35) 100%)",
+        }}
+      >
+        <g
+          fill="none"
+          stroke="rgba(255,255,255,0.14)"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {/* Window frame */}
+          <rect x="20" y="40" width="1560" height="890" rx="22" />
+          {/* Title bar divider */}
+          <line x1="20" y1="110" x2="1580" y2="110" />
+        </g>
+
+        {/* Traffic light dots — macOS canonical */}
+        <g>
+          <circle cx="58" cy="75" r="8" fill="#FF5F56" />
+          <circle cx="86" cy="75" r="8" fill="#FFBD2E" />
+          <circle cx="114" cy="75" r="8" fill="#27C93F" />
+        </g>
+
+        {/* URL pill — centered, minimal */}
+        <rect x="640" y="60" width="320" height="28" rx="14" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="1.2" />
+      </svg>
+      </div>
+    </div>
+  );
+}
+
 type Topic = "performance" | "sla" | "revenue" | null;
 
 /* ── TOPIC CONFIG ── */
 const TOPIC_CONFIG = {
   revenue: {
-    question: "Revenue this month",
+    question: "Calls I missed yesterday",
     aiText: "I've analyzed your revenue data for this period. Monthly revenue is trending above target with strong growth in commercial accounts. Here's the full breakdown with expenses comparison and quarterly KPIs.",
   },
   performance: {
-    question: "Team performance this week",
+    question: "Aging supplements by carrier",
     aiText: "Looking at this week's team performance metrics, I can see CPU utilization peaked during business hours while memory usage remained relatively stable. The system handled load well with no critical thresholds breached.",
   },
   sla: {
-    question: "Why are SLAs slipping?",
+    question: "Estimates over $25K that need follow-up",
     aiText: "I've identified the root cause of your SLA issues. Three out of five recent jobs have breached their service level agreements, primarily in commercial HVAC and electrical categories. The average overrun is 2.4 hours.",
   },
 };
@@ -103,26 +195,58 @@ export default function AnalyzeSection() {
   const [showChart, setShowChart] = useState(false);
 
   const config = topic ? TOPIC_CONFIG[topic] : null;
-  const { displayed: aiText, done: aiDone } = useTypewriter(config?.aiText || "", 18, showAiResponse);
+  const { displayed: aiText, done: aiDone } = useTypewriter(config?.aiText || "", 8, showAiResponse);
 
   // Show chart once typing finishes
   useEffect(() => {
     if (aiDone) {
-      const t = setTimeout(() => setShowChart(true), 400);
+      const t = setTimeout(() => setShowChart(true), 150);
       return () => clearTimeout(t);
     }
   }, [aiDone]);
 
   const hasTriggered = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const askRef = useRef<HTMLDivElement>(null);
+  const [askProgress, setAskProgress] = useState(0);
+  const [backdropRevealed, setBackdropRevealed] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = askRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const distance = vh - rect.top;
+      const total = vh;
+      const p = Math.max(0, Math.min(1, distance / total));
+      setAskProgress(p);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (askProgress > 0.15 && !backdropRevealed) {
+      const t = setTimeout(() => setBackdropRevealed(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, [askProgress, backdropRevealed]);
+
+  const parallaxOffset = (askProgress - 0.5) * -50;
 
   const triggerTopic = (t: Topic) => {
     setShowQuestion(false);
     setShowAiResponse(false);
     setShowChart(false);
     setTopic(t);
-    setTimeout(() => setShowQuestion(true), 300);
-    setTimeout(() => setShowAiResponse(true), 900);
+    setTimeout(() => setShowQuestion(true), 100);
+    setTimeout(() => setShowAiResponse(true), 350);
   };
 
   useEffect(() => {
@@ -146,14 +270,14 @@ export default function AnalyzeSection() {
           triggerTopic("revenue");
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.1 }
     );
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
   const cardStyle: React.CSSProperties = {
-    background: "var(--surface)",
+    background: "var(--card-bg)",
     border: "1px solid var(--card-border)",
     borderRadius: "16px",
     padding: "24px",
@@ -167,14 +291,27 @@ export default function AnalyzeSection() {
       style={{ background: "var(--bg)", padding: "0 24px", position: "relative" }}
     >
       {/* Ask — centered header + chat */}
-      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "120px 0" }}>
-        <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center", width: "100%" }}>
-          <div style={{ marginBottom: "48px" }}>
-            <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "16px" }}>
+      <div ref={askRef} style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "160px 0", position: "relative" }}>
+        <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={parallaxOffset} />
+        <div
+          style={{
+            maxWidth: "900px",
+            margin: "0 auto",
+            textAlign: "center",
+            width: "100%",
+            position: "relative",
+            zIndex: 1,
+            transform: `translateY(${(1 - Math.min(1, askProgress / 0.3)) * 24}px)`,
+            opacity: Math.min(1, askProgress / 0.25),
+            transition: "none",
+          }}
+        >
+          <div style={{ marginBottom: "40px" }}>
+            <ScrollFloat as="h2" style={{ fontSize: "clamp(40px, 6vw, 72px)", fontWeight: 700, letterSpacing: "-0.045em", lineHeight: 1.05, color: "var(--ink)", marginBottom: "14px" }}>
               Ask.
             </ScrollFloat>
-            <p style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "#ffffff", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto" }}>
-              Type a question in plain English — Sense queries your data and answers instantly.
+            <p style={{ fontSize: "clamp(15px, 1.6vw, 17px)", color: "var(--ink2)", lineHeight: 1.5, maxWidth: "480px", margin: "0 auto", fontWeight: 400 }}>
+              Pick a prompt below or type your own.
             </p>
           </div>
 
@@ -185,7 +322,7 @@ export default function AnalyzeSection() {
       </div>
 
       {/* Analyze — conversation + charts */}
-      <div id="analyze-content" style={{ maxWidth: "900px", margin: "0 auto" }}>
+      <div id="analyze-content" style={{ maxWidth: "900px", margin: "0 auto", padding: "160px 0" }}>
         <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "40px" }}>
           Analyze.
         </ScrollFloat>
@@ -307,17 +444,17 @@ export default function AnalyzeSection() {
                   {/* REVENUE */}
                   {topic === "revenue" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(94,234,212,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(94,234,212,0.22)", boxShadow: "0 14px 36px -14px rgba(94,234,212,0.3), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
+                      <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
                         <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>Monthly Revenue</div>
                         <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>Revenue vs Expenses (2024)</div>
                         <div style={{ height: "280px" }}><Bar data={revenueChartData} options={chartOpts(6000) as any} /></div>
                       </div>
-                      <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(232,93,58,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(232,93,58,0.22)", boxShadow: "0 14px 36px -14px rgba(232,93,58,0.3), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
+                      <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
                         <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>Q4 Performance</div>
                         <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "16px" }}>October through December 2024</div>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "var(--glass-bg)", borderRadius: "12px", overflow: "hidden" }}>
                           {kpis.map((k) => (
-                            <div key={k.label} style={{ background: k.up ? "linear-gradient(160deg, rgba(34,197,94,0.08), var(--surface) 70%)" : "linear-gradient(160deg, rgba(239,68,68,0.08), var(--surface) 70%)", padding: "20px" }}>
+                            <div key={k.label} style={{ background: "var(--surface)", padding: "20px" }}>
                               <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
                               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>{k.value}</span>
@@ -334,7 +471,7 @@ export default function AnalyzeSection() {
 
                   {/* PERFORMANCE */}
                   {topic === "performance" && (
-                    <div style={{ ...cardStyle, background: "linear-gradient(160deg, rgba(74,222,128,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(74,222,128,0.22)", boxShadow: "0 14px 36px -14px rgba(74,222,128,0.3), var(--card-shadow)", position: "relative", overflow: "hidden" }}>
+                    <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
                       <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>System Performance</div>
                       <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>CPU and Memory usage over time</div>
                       <div style={{ height: "300px" }}><Line data={perfChartData} options={chartOpts(100) as any} /></div>
@@ -344,7 +481,7 @@ export default function AnalyzeSection() {
                   {/* SLA */}
                   {topic === "sla" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", background: "linear-gradient(160deg, rgba(239,68,68,0.07) 0%, var(--surface) 70%)", border: "1px solid rgba(239,68,68,0.22)", boxShadow: "0 14px 36px -14px rgba(239,68,68,0.3), var(--card-shadow)", position: "relative" }}>
+                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
                         <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 70px 70px 90px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                           <span>Job ID</span><span>Description</span><span>SLA</span><span>Actual</span><span>Status</span>
                         </div>
@@ -385,7 +522,7 @@ export default function AnalyzeSection() {
         )}
       </div>
 
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         .typing-dot {
           display: inline-block;
           width: 4px;
@@ -398,7 +535,7 @@ export default function AnalyzeSection() {
           0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
           30% { opacity: 1; transform: scale(1); }
         }
-      `}</style>
+      ` }} />
     </section>
   );
 }

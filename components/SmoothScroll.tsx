@@ -38,7 +38,7 @@ export default function SmoothScroll() {
     });
     const targets = Array.from(
       document.querySelectorAll<HTMLElement>("main > section, [data-snap]")
-    );
+    ).filter((el) => !el.hasAttribute("data-no-snap"));
     const removeSnap = targets.length
       ? snap.addElements(targets, { align: "start" })
       : () => {};
