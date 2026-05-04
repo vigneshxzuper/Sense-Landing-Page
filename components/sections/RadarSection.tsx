@@ -1,43 +1,41 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Clock, FileText, Users, DollarSign, TrendingUp, TrendingDown, BarChart3, Activity, Wrench, MapPin, CalendarDays } from "lucide-react";
+import { AlertTriangle, Clock, FileText, Users, DollarSign, TrendingUp, TrendingDown, BarChart3, Activity, Wrench, MapPin, CalendarDays, Phone, HardHat } from "lucide-react";
 import ScrollFloat from "@/components/ScrollFloat";
 
 const ALERT_CARDS = [
-  { icon: FileText, label: "Stuck Quotes", value: "3", sub: "$84,000 potential revenue", detail: "Quotes sent but no response in 7+ days", color: "#FCD34D", bg: "linear-gradient(160deg, rgba(245,158,11,0.14) 0%, var(--surface2) 100%)", border: "rgba(245,158,11,0.30)", glow: "rgba(245,158,11,0.25)" },
-  { icon: Clock, label: "Jobs Behind SLA", value: "4", sub: "Mostly re-roofing jobs", detail: "Overdue by 2–5 days, SLA breach risk", color: "#FCA5A5", bg: "linear-gradient(160deg, rgba(239,68,68,0.14) 0%, var(--surface2) 100%)", border: "rgba(239,68,68,0.30)", glow: "rgba(239,68,68,0.25)" },
-  { icon: AlertTriangle, label: "Pending Invoices", value: "6", sub: "$42,600 unbilled revenue", detail: "Jobs completed but invoices not sent", color: "#F5A788", bg: "linear-gradient(160deg, rgba(232,93,58,0.14) 0%, var(--surface2) 100%)", border: "rgba(232,93,58,0.30)", glow: "rgba(232,93,58,0.25)" },
-  { icon: Users, label: "Unassigned Jobs", value: "5", sub: "3 urgent, 2 standard", detail: "Waiting for tech assignment since yesterday", color: "#C4B5FD", bg: "linear-gradient(160deg, rgba(139,92,246,0.14) 0%, var(--surface2) 100%)", border: "rgba(139,92,246,0.30)", glow: "rgba(139,92,246,0.25)" },
+  { icon: FileText, label: "Stuck supplements", value: "7", sub: "$164,300 sitting with carriers", detail: "Submitted 30+ days ago. Oldest is State Farm at 47 days.", color: "#FCD34D", bg: "linear-gradient(160deg, rgba(245,158,11,0.14) 0%, var(--surface2) 100%)", border: "rgba(245,158,11,0.30)", glow: "rgba(245,158,11,0.25)" },
+  { icon: Clock, label: "Dormant estimates", value: "12", sub: "$318,000 aging out", detail: "No touch in 10+ days. Sales Coach Agent is ready.", color: "#FCA5A5", bg: "linear-gradient(160deg, rgba(239,68,68,0.14) 0%, var(--surface2) 100%)", border: "rgba(239,68,68,0.30)", glow: "rgba(239,68,68,0.25)" },
+  { icon: AlertTriangle, label: "Unsent invoices", value: "9", sub: "$87,450 in completed work", detail: "Jobs closed out. Invoices never went.", color: "#F5A788", bg: "linear-gradient(160deg, rgba(232,93,58,0.14) 0%, var(--surface2) 100%)", border: "rgba(232,93,58,0.30)", glow: "rgba(232,93,58,0.25)" },
+  { icon: Phone, label: "Missed calls", value: "11", sub: "3 urgent", detail: "CSR Agent has cleared 9 of them since this morning.", color: "#C4B5FD", bg: "linear-gradient(160deg, rgba(139,92,246,0.14) 0%, var(--surface2) 100%)", border: "rgba(139,92,246,0.30)", glow: "rgba(139,92,246,0.25)" },
 ];
 
 const KPI_CARDS = [
-  { label: "Revenue MTD", value: "$284,500", change: "+14.2%", up: true, icon: DollarSign, accent: "#22C55E", tint: "rgba(34,197,94,0.12)", glow: "rgba(34,197,94,0.28)" },
-  { label: "Jobs Completed", value: "142", change: "+8%", up: true, icon: BarChart3, accent: "#38BDF8", tint: "rgba(56,189,248,0.12)", glow: "rgba(56,189,248,0.28)" },
-  { label: "Active Technicians", value: "24", change: "−2", up: false, icon: Users, accent: "#A78BFA", tint: "rgba(167,139,250,0.12)", glow: "rgba(167,139,250,0.28)" },
-  { label: "Avg Response Time", value: "2.4h", change: "−18min", up: true, icon: Activity, accent: "#F59E0B", tint: "rgba(245,158,11,0.12)", glow: "rgba(245,158,11,0.28)" },
+  { label: "Pipeline value", value: "$1.82M", change: "+9.4%", up: true, icon: DollarSign, accent: "#22C55E", tint: "rgba(34,197,94,0.12)", glow: "rgba(34,197,94,0.28)" },
+  { label: "Jobs in production", value: "31", change: "+4", up: true, icon: Wrench, accent: "#38BDF8", tint: "rgba(56,189,248,0.12)", glow: "rgba(56,189,248,0.28)" },
+  { label: "Open supplements", value: "18", change: "+3", up: false, icon: FileText, accent: "#A78BFA", tint: "rgba(167,139,250,0.12)", glow: "rgba(167,139,250,0.28)" },
+  { label: "Same-day close rate", value: "54%", change: "+6 pts", up: true, icon: Activity, accent: "#F59E0B", tint: "rgba(245,158,11,0.12)", glow: "rgba(245,158,11,0.28)" },
 ];
 
-const OVERDUE = [
-  { name: "Apex Facilities", amount: "$14,400", age: "72 days", risk: "high" },
-  { name: "Ridge Corp", amount: "$9,800", age: "61 days", risk: "high" },
-  { name: "GreenLeaf Realty", amount: "$7,200", age: "45 days", risk: "mid" },
-  { name: "Summit Engineering", amount: "$6,100", age: "38 days", risk: "mid" },
-  { name: "Metro HVAC Solutions", amount: "$4,300", age: "22 days", risk: "low" },
+const RECEIVABLES_BUCKETS = [
+  { label: "0–30 days", value: 74200, pct: 31, color: "var(--yellow)" },
+  { label: "31–60 days", value: 83900, pct: 35, color: "#E85D3A" },
+  { label: "60+ days", value: 83700, pct: 34, color: "var(--red)" },
 ];
 
 const UPCOMING_JOBS = [
-  { title: "HVAC Maintenance — Premier Properties", tech: "Mike Chen", time: "Today, 2:00 PM", status: "On Track", statusColor: "#22C55E" },
-  { title: "Roof Inspection — Lakeside Dental", tech: "Sarah Kim", time: "Today, 4:30 PM", status: "At Risk", statusColor: "#F59E0B" },
-  { title: "Electrical Panel — Metro School", tech: "Unassigned", time: "Tomorrow, 9:00 AM", status: "Unassigned", statusColor: "#EF4444" },
-  { title: "Plumbing Repair — Horizon Group", tech: "Jake Torres", time: "Tomorrow, 11:00 AM", status: "On Track", statusColor: "#22C55E" },
+  { title: "Re-roof · Hargrove residence", tech: "Reyes crew", time: "Today, 1:00 PM", status: "On track", statusColor: "#22C55E" },
+  { title: "Supplement inspection · Chen residence", tech: "Patel", time: "Today, 3:30 PM", status: "At risk, material delay", statusColor: "#F59E0B" },
+  { title: "Gutter install · Elmwood HOA", tech: "Bennett crew", time: "Tomorrow, 8:00 AM", status: "On track", statusColor: "#22C55E" },
+  { title: "Emergency tarp · Okafor residence", tech: "Unassigned", time: "Tomorrow, 7:00 AM", status: "Needs a crew", statusColor: "#EF4444" },
 ];
 
-const TEAM_STATUS = [
-  { name: "Mike Chen", role: "HVAC Specialist", jobs: 6, rating: 4.8, status: "active" },
-  { name: "Sarah Kim", role: "General Tech", jobs: 4, rating: 4.5, status: "active" },
-  { name: "Jake Torres", role: "Plumbing", jobs: 5, rating: 4.9, status: "active" },
-  { name: "Lisa Wang", role: "Electrical", jobs: 3, rating: 4.7, status: "break" },
+const CREWS = [
+  { name: "Reyes", role: "Tear-off and install", status: "2 jobs", active: true },
+  { name: "Kowalski", role: "Install", status: "wrapping at 1 PM", active: true },
+  { name: "Patel", role: "Inspections", status: "4 stops", active: true },
+  { name: "Bennett", role: "Gutter and trim", status: "on schedule", active: true },
 ];
 
 export default function RadarSection() {
@@ -136,13 +134,13 @@ export default function RadarSection() {
         <div style={{ marginBottom: "16px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.2)", borderRadius: "100px", padding: "5px 14px", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "20px" }}>
             <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#E85D3A" }} />
-            Radar
+            Task Radar
           </div>
           <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "8px" }}>
-            Everything Happening. Everywhere. Now.
+            Your dashboard is whatever you ask for.
           </ScrollFloat>
-          <p style={{ fontSize: "16px", color: "var(--ink3)", maxWidth: "500px" }}>
-            Real-time operational intelligence across your entire business.
+          <p style={{ fontSize: "16px", color: "var(--ink3)", maxWidth: "560px" }}>
+            Pin any answer as a live widget. It keeps itself current.
           </p>
         </div>
 
@@ -258,14 +256,14 @@ export default function RadarSection() {
         {/* Bottom grid: 3 columns */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
 
-          {/* Revenue chart */}
+          {/* Revenue MTD vs target */}
           <div style={{ ...card, background: "linear-gradient(160deg, rgba(34,197,94,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(34,197,94,0.26)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(34,197,94,0.16)", position: "relative", overflow: "hidden", ...stagger(8) }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
               <div>
-                <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Revenue MTD vs Target</div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.03em", marginTop: "2px" }}>$284,500</div>
+                <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Revenue MTD vs. target</div>
+                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.03em", marginTop: "2px" }}>$612,400</div>
               </div>
-              <span style={{ fontSize: "12px", color: "var(--green)", background: "rgba(34,197,94,0.1)", padding: "3px 8px", borderRadius: "6px" }}>+$24.5K</span>
+              <span style={{ fontSize: "12px", color: "var(--green)", background: "rgba(34,197,94,0.1)", padding: "3px 8px", borderRadius: "6px" }}>+$52K</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "100px" }}>
               {[45, 58, 42, 65, 55, 70, 62, 78, 72, 85, 80, 90, 85, 92].map((v, i) => (
@@ -275,27 +273,23 @@ export default function RadarSection() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "14px" }}>
               <div style={{ background: "var(--glass-bg)", borderRadius: "8px", padding: "8px 10px" }}>
                 <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Target</div>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>$260,000</div>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>$560,000</div>
               </div>
               <div style={{ background: "var(--glass-bg)", borderRadius: "8px", padding: "8px 10px" }}>
-                <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Days Left</div>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>20</div>
+                <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Days left</div>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>11 days</div>
               </div>
             </div>
           </div>
 
-          {/* Overdue invoices */}
+          {/* Aging receivables */}
           <div style={{ ...card, background: "linear-gradient(160deg, rgba(239,68,68,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(239,68,68,0.26)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(239,68,68,0.16)", position: "relative", overflow: "hidden", ...stagger(9) }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-              <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Overdue Invoices</span>
-              <span style={{ fontSize: "12px", color: "var(--red)", fontWeight: 600 }}>$38,200</span>
+              <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Aging receivables</span>
+              <span style={{ fontSize: "12px", color: "var(--red)", fontWeight: 600 }}>$241,800</span>
             </div>
             {/* Horizontal bars */}
-            {[
-              { label: "0–30 days", value: 14200, pct: 37, color: "var(--yellow)" },
-              { label: "31–60 days", value: 11800, pct: 31, color: "#E85D3A" },
-              { label: "60+ days", value: 12200, pct: 32, color: "var(--red)" },
-            ].map((b) => (
+            {RECEIVABLES_BUCKETS.map((b) => (
               <div key={b.label} style={{ marginBottom: "10px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "4px" }}>
                   <span style={{ color: "var(--ink2)" }}>{b.label}</span>
@@ -308,37 +302,39 @@ export default function RadarSection() {
             ))}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "14px" }}>
               <div style={{ background: "var(--glass-bg)", borderRadius: "8px", padding: "8px 10px" }}>
-                <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Invoices</div>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>14</div>
+                <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Open invoices</div>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>22</div>
               </div>
               <div style={{ background: "var(--glass-bg)", borderRadius: "8px", padding: "8px 10px" }}>
-                <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Avg Overdue</div>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>22 days</div>
+                <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Avg age</div>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>38 days</div>
               </div>
             </div>
           </div>
 
-          {/* Team status */}
+          {/* Crews today */}
           <div style={{ ...card, background: "linear-gradient(160deg, rgba(167,139,250,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(167,139,250,0.26)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(167,139,250,0.16)", position: "relative", overflow: "hidden", ...stagger(10) }}>
-            <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>Team Status</div>
-            {TEAM_STATUS.map((t, i) => (
+            <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>Crews today</div>
+            {CREWS.map((c, i) => (
               <div
-                key={t.name}
+                key={c.name}
                 style={{
                   display: "flex", alignItems: "center", gap: "10px",
-                  marginBottom: i < TEAM_STATUS.length - 1 ? "10px" : 0,
-                  paddingBottom: i < TEAM_STATUS.length - 1 ? "10px" : 0,
-                  borderBottom: i < TEAM_STATUS.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                  marginBottom: i < CREWS.length - 1 ? "10px" : 0,
+                  paddingBottom: i < CREWS.length - 1 ? "10px" : 0,
+                  borderBottom: i < CREWS.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
                 }}
               >
-                <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 600, color: "var(--ink2)" }}>
-                  {t.name.split(" ").map(n => n[0]).join("")}
+                <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(167,139,250,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <HardHat className="w-4 h-4" style={{ color: "#A78BFA" }} />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "13px", color: "var(--ink)", fontWeight: 500 }}>{t.name}</div>
-                  <div style={{ fontSize: "10px", color: "var(--ink3)" }}>{t.role} · {t.jobs} jobs · ⭐ {t.rating}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "13px", color: "var(--ink)", fontWeight: 500 }}>
+                    {c.name} · <span style={{ color: "var(--ink2)", fontWeight: 400 }}>{c.role}</span>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--ink3)" }}>{c.status}</div>
                 </div>
-                <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: t.status === "active" ? "#22C55E" : "#F59E0B", boxShadow: t.status === "active" ? "0 0 6px #22C55E" : "none" }} />
+                <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: c.active ? "#22C55E" : "#F59E0B", boxShadow: c.active ? "0 0 6px #22C55E" : "none", flexShrink: 0 }} />
               </div>
             ))}
           </div>
@@ -348,7 +344,7 @@ export default function RadarSection() {
         <div style={{ ...card, marginTop: "16px", background: "linear-gradient(160deg, rgba(56,189,248,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(56,189,248,0.26)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(56,189,248,0.16)", position: "relative", overflow: "hidden", ...stagger(11) }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
             <CalendarDays className="w-4 h-4 text-[#3F3F46]" />
-            <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Upcoming Schedule</span>
+            <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Next 24 hours</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
             {UPCOMING_JOBS.map((j) => (

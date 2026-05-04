@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { SenseChat } from "@/components/ui/sense-chat";
 import ScrollFloat from "@/components/ScrollFloat";
+import { Sparkles } from "lucide-react";
+import { useDeployedTopic } from "@/components/TopicContext";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -116,32 +118,83 @@ type Topic = "performance" | "sla" | "revenue" | null;
 const TOPIC_CONFIG = {
   revenue: {
     question: "Calls I missed yesterday",
-    aiText: "I've analyzed your revenue data for this period. Monthly revenue is trending above target with strong growth in commercial accounts. Here's the full breakdown with expenses comparison and quarterly KPIs.",
+    aiText: "11 missed calls. 3 look like storm damage, 2 are existing customers, 6 are new leads.",
   },
   performance: {
     question: "Aging supplements by carrier",
-    aiText: "Looking at this week's team performance metrics, I can see CPU utilization peaked during business hours while memory usage remained relatively stable. The system handled load well with no critical thresholds breached.",
+    aiText: "7 supplements are past 30 days. $164,300 waiting across 4 carriers.",
   },
   sla: {
     question: "Estimates over $25K that need follow-up",
-    aiText: "I've identified the root cause of your SLA issues. Three out of five recent jobs have breached their service level agreements, primarily in commercial HVAC and electrical categories. The average overrun is 2.4 hours.",
+    aiText: "12 estimates totaling $483,000. Average age since last touch: 14 days.",
   },
 };
 
 /* ── CHART DATA ── */
-const revenueChartData = {
-  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+const missedCallKpis = [
+  { label: "MISSED", value: "11" },
+  { label: "PIPELINE AT RISK", value: "$78K" },
+  { label: "URGENT", value: "3", accent: "#ef4444" },
+];
+const missedCallRows = [
+  { time: "4:47 PM", caller: "918-555-0144", reason: "Storm damage, roof leaking", value: "~$22K", urgent: true },
+  { time: "5:12 PM", caller: "Meridian Builders", reason: "Commercial re-roof inquiry", value: "~$40K" },
+  { time: "6:03 PM", caller: "Unknown", reason: "Called twice, no voicemail", value: "Unknown" },
+];
+const missedCallMore = 8;
+const carrierAgingRows = [
+  { carrier: "State Farm", pending: 72400, days: 47 },
+  { carrier: "Allstate", pending: 41800, days: 38 },
+  { carrier: "USAA", pending: 29600, days: 33 },
+  { carrier: "Farmers", pending: 20500, days: 31 },
+];
+const carrierAgingChart = {
+  labels: carrierAgingRows.map((r) => r.carrier),
   datasets: [
-    { label: "Revenue", data: [3800, 2900, 4800, 2700, 2000, 2200], backgroundColor: "rgba(94,234,212,0.8)", borderRadius: 4, barPercentage: 0.6 },
-    { label: "Expenses", data: [2300, 1200, 3100, 3500, 4700, 3600], backgroundColor: "rgba(251,113,133,0.8)", borderRadius: 4, barPercentage: 0.6 },
+    {
+      label: "$ pending",
+      data: carrierAgingRows.map((r) => r.pending),
+      backgroundColor: ["rgba(232,93,58,0.85)", "rgba(232,93,58,0.6)", "rgba(232,93,58,0.45)", "rgba(232,93,58,0.32)"],
+      borderRadius: 6,
+      barPercentage: 0.7,
+    },
   ],
 };
-const perfChartData = {
-  labels: ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"],
-  datasets: [
-    { label: "CPU %", data: [45, 32, 65, 92, 75, 55], borderColor: "#4ade80", pointBackgroundColor: "#fff", pointBorderColor: "#4ade80", pointBorderWidth: 2, pointRadius: 5, tension: 0.4, fill: false },
-    { label: "Memory %", data: [62, 58, 68, 85, 78, 64], borderColor: "#fb7185", pointBackgroundColor: "#fff", pointBorderColor: "#fb7185", pointBorderWidth: 2, pointRadius: 5, tension: 0.4, fill: false },
-  ],
+const carrierChartOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  indexAxis: "y" as const,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: "#1e1e24",
+      borderColor: "rgba(255,255,255,0.1)",
+      borderWidth: 1,
+      titleColor: "#fff",
+      bodyColor: "#A1A1AA",
+      cornerRadius: 8,
+      padding: 10,
+      callbacks: {
+        label: (ctx: any) => `$${ctx.parsed.x.toLocaleString()}`,
+      },
+    },
+  },
+  scales: {
+    x: {
+      grid: { color: "rgba(255,255,255,0.05)" },
+      ticks: {
+        color: "var(--ink2)",
+        font: { size: 12 },
+        callback: (v: any) => `$${(Number(v) / 1000).toFixed(0)}k`,
+      },
+      border: { display: false },
+    },
+    y: {
+      grid: { display: false },
+      ticks: { color: "var(--ink)", font: { size: 13, weight: 500 } },
+      border: { display: false },
+    },
+  },
 };
 const chartOpts = (max: number) => ({
   responsive: true, maintainAspectRatio: false,
@@ -155,20 +208,17 @@ const chartOpts = (max: number) => ({
   },
 });
 
-const slaRows = [
-  { id: "JOB-401", desc: "Premier Properties — HVAC Repair", sla: "4 hrs", actual: "6.2 hrs", status: "Breached", color: "#ef4444" },
-  { id: "JOB-389", desc: "Sunrise HVAC — Annual Maintenance", sla: "8 hrs", actual: "9.1 hrs", status: "Breached", color: "#ef4444" },
-  { id: "JOB-412", desc: "GreenLeaf Realty — Roof Inspection", sla: "24 hrs", actual: "22.5 hrs", status: "At Risk", color: "#f59e0b" },
-  { id: "JOB-395", desc: "Lakeside Dental — Plumbing", sla: "4 hrs", actual: "3.8 hrs", status: "On Track", color: "#22c55e" },
-  { id: "JOB-420", desc: "Metro School District — Electrical", sla: "8 hrs", actual: "11.4 hrs", status: "Breached", color: "#ef4444" },
+const estimateKpis = [
+  { label: "ESTIMATES", value: "12" },
+  { label: "TOTAL VALUE", value: "$483K" },
+  { label: "AT RISK OF AGING OUT", value: "$318K" },
 ];
-const kpis = [
-  { label: "REVENUE", value: "$847,300", change: "+12.4%", up: true },
-  { label: "ACTIVE USERS", value: "25K", change: "+8.2%", up: true },
-  { label: "CHURN RATE", value: "2.1%", change: "−0.8%", up: false },
-  { label: "NPS SCORE", value: "72", change: "+5%", up: true },
+const estimateRows = [
+  { name: "Hargrove residence", value: 68400, days: 19 },
+  { name: "Elmwood HOA", value: 54200, days: 16 },
+  { name: "Okafor residence", value: 41900, days: 12 },
 ];
-
+const estimateMore = 9;
 /* ── Typewriter hook ── */
 function useTypewriter(text: string, speed = 20, active = false) {
   const [displayed, setDisplayed] = useState("");
@@ -190,6 +240,11 @@ function useTypewriter(text: string, speed = 20, active = false) {
 /* ── COMPONENT ── */
 export default function AnalyzeSection() {
   const [topic, setTopic] = useState<Topic>(null);
+  const { setDeployedTopic } = useDeployedTopic();
+  const handleDeploy = (variant: "performance" | "sla" | "revenue") => {
+    setDeployedTopic(variant);
+    document.querySelector("#act-section")?.scrollIntoView({ behavior: "smooth" });
+  };
   const [showQuestion, setShowQuestion] = useState(false);
   const [showAiResponse, setShowAiResponse] = useState(false);
   const [showChart, setShowChart] = useState(false);
@@ -323,9 +378,12 @@ export default function AnalyzeSection() {
 
       {/* Analyze — conversation + charts */}
       <div id="analyze-content" style={{ maxWidth: "900px", margin: "0 auto", padding: "160px 0" }}>
-        <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "40px" }}>
+        <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "14px" }}>
           Analyze.
         </ScrollFloat>
+        <p style={{ fontSize: "clamp(15px, 1.6vw, 17px)", color: "var(--ink2)", lineHeight: 1.5, maxWidth: "560px", margin: "0 0 40px 0", fontWeight: 400 }}>
+          See how Sense breaks down the answer.
+        </p>
 
         {/* Chat conversation */}
         {topic && (
@@ -441,71 +499,232 @@ export default function AnalyzeSection() {
                     ...(showChart ? {} : { pointerEvents: "none" as const }),
                   }}
                 >
-                  {/* REVENUE */}
+                  {/* REVENUE — Calls I missed yesterday */}
                   {topic === "revenue" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
-                        <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>Monthly Revenue</div>
-                        <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>Revenue vs Expenses (2024)</div>
-                        <div style={{ height: "280px" }}><Bar data={revenueChartData} options={chartOpts(6000) as any} /></div>
+                      {/* KPI row */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: "var(--glass-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--card-border)" }}>
+                        {missedCallKpis.map((k) => (
+                          <div key={k.label} style={{ background: "var(--surface)", padding: "18px 20px" }}>
+                            <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
+                            <div style={{ fontSize: "26px", fontWeight: 700, color: k.accent || "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
+                          </div>
+                        ))}
                       </div>
-                      <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
-                        <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>Q4 Performance</div>
-                        <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "16px" }}>October through December 2024</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: "var(--glass-bg)", borderRadius: "12px", overflow: "hidden" }}>
-                          {kpis.map((k) => (
-                            <div key={k.label} style={{ background: "var(--surface)", padding: "20px" }}>
-                              <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <span style={{ fontSize: "28px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>{k.value}</span>
-                                <span style={{ fontSize: "11px", fontWeight: 500, color: k.up ? "#22c55e" : "#ef4444", background: k.up ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)", padding: "2px 7px", borderRadius: "100px" }}>
-                                  {!k.up && "↓ "}{k.change}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
+
+                      {/* Sorted table — missed calls by urgency */}
+                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "70px 150px 1fr 80px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                          <span>Time</span><span>Caller</span><span>Reason</span><span style={{ textAlign: "right" }}>Value</span>
                         </div>
+                        {missedCallRows.map((r, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              display: "grid", gridTemplateColumns: "70px 150px 1fr 80px", padding: "14px 20px", gap: "8px",
+                              borderBottom: "1px solid rgba(255,255,255,0.05)",
+                              fontSize: "13px", color: "#d4d4d8", alignItems: "center",
+                              opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
+                            }}
+                          >
+                            <span style={{ color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{r.time}</span>
+                            <span style={{ color: "var(--ink)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                              {r.urgent && (
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 6px rgba(239,68,68,0.7)", flexShrink: 0 }} />
+                              )}
+                              {r.caller}
+                            </span>
+                            <span style={{ color: "var(--ink2)", fontSize: "12px" }}>{r.reason}</span>
+                            <span style={{ textAlign: "right", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{r.value}</span>
+                          </div>
+                        ))}
+                        <div style={{ padding: "12px 20px", fontSize: "12px", color: "var(--ink2)", fontWeight: 500 }}>
+                          + {missedCallMore} more
+                        </div>
+                      </div>
+
+                      {/* Insight callout */}
+                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "#FCA5A5", lineHeight: 1.55 }}>
+                        <span style={{ fontSize: "16px", lineHeight: 1.2 }}>⚠️</span>
+                        <span>
+                          <strong>The storm caller is the priority.</strong> Same zip code as Tuesday&apos;s hail report and they&apos;re calling a competitor next if no one picks up.
+                        </span>
+                      </div>
+
+                      {/* Action button */}
+                      <div style={{ display: "flex" }}>
+                        <button
+                          type="button"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "12px 20px",
+                            borderRadius: "999px",
+                            background: "linear-gradient(135deg, #E85D3A, #C4472A)",
+                            color: "#fff",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            border: "none",
+                            cursor: "pointer",
+                            boxShadow: "0 6px 24px rgba(232,93,58,0.32), 0 2px 6px rgba(0,0,0,0.18)",
+                            transition: "transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s",
+                          }}
+                          onClick={() => handleDeploy("revenue")}
+                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                        >
+                          <Sparkles style={{ width: 14, height: 14 }} />
+                          Deploy CSR Agent
+                        </button>
                       </div>
                     </div>
                   )}
 
-                  {/* PERFORMANCE */}
+                  {/* PERFORMANCE — Aging supplements by carrier */}
                   {topic === "performance" && (
-                    <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
-                      <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>System Performance</div>
-                      <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>CPU and Memory usage over time</div>
-                      <div style={{ height: "300px" }}><Line data={perfChartData} options={chartOpts(100) as any} /></div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {/* Horizontal bar — $ pending by carrier */}
+                      <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
+                        <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>$ pending by carrier</div>
+                        <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>Outstanding supplement value across carriers</div>
+                        <div style={{ height: "240px" }}><Bar data={carrierAgingChart} options={carrierChartOpts as any} /></div>
+                      </div>
+
+                      {/* Table — carrier rows */}
+                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 90px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                          <span>Carrier</span><span style={{ textAlign: "right" }}>Pending</span><span style={{ textAlign: "right" }}>Days aging</span>
+                        </div>
+                        {carrierAgingRows.map((r, i) => (
+                          <div
+                            key={r.carrier}
+                            style={{
+                              display: "grid", gridTemplateColumns: "1fr 110px 90px", padding: "14px 20px",
+                              borderBottom: i < carrierAgingRows.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                              fontSize: "13px", color: "#d4d4d8", alignItems: "center",
+                              opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
+                            }}
+                          >
+                            <span style={{ color: "var(--ink)", fontWeight: 500 }}>{r.carrier}</span>
+                            <span style={{ textAlign: "right", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>${r.pending.toLocaleString()}</span>
+                            <span style={{ textAlign: "right", color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{r.days} days</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Insight callout */}
+                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "#FCA5A5", lineHeight: 1.55 }}>
+                        <span style={{ fontSize: "16px", lineHeight: 1.2 }}>⚠️</span>
+                        <span>
+                          <strong>State Farm is the biggest exposure.</strong> 3 of the 7 claims sit with one adjuster.
+                        </span>
+                      </div>
+
+                      {/* Action button */}
+                      <div style={{ display: "flex" }}>
+                        <button
+                          type="button"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "12px 20px",
+                            borderRadius: "999px",
+                            background: "linear-gradient(135deg, #E85D3A, #C4472A)",
+                            color: "#fff",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            border: "none",
+                            cursor: "pointer",
+                            boxShadow: "0 6px 24px rgba(232,93,58,0.32), 0 2px 6px rgba(0,0,0,0.18)",
+                            transition: "transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s",
+                          }}
+                          onClick={() => handleDeploy("performance")}
+                          onMouseDown={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                          onMouseUp={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                        >
+                          <Sparkles style={{ width: 14, height: 14 }} />
+                          Deploy Collections Agent
+                        </button>
+                      </div>
                     </div>
                   )}
 
                   {/* SLA */}
                   {topic === "sla" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {/* KPI row */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: "var(--glass-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--card-border)" }}>
+                        {estimateKpis.map((k) => (
+                          <div key={k.label} style={{ background: "var(--surface)", padding: "18px 20px" }}>
+                            <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
+                            <div style={{ fontSize: "26px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Sorted table */}
                       <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 70px 70px 90px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                          <span>Job ID</span><span>Description</span><span>SLA</span><span>Actual</span><span>Status</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 100px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                          <span>Estimate</span><span style={{ textAlign: "right" }}>Value</span><span style={{ textAlign: "right" }}>Days aging</span>
                         </div>
-                        {slaRows.map((r, i) => (
+                        {estimateRows.map((r, i) => (
                           <div
-                            key={r.id}
+                            key={r.name}
                             style={{
-                              display: "grid", gridTemplateColumns: "90px 1fr 70px 70px 90px", padding: "14px 20px",
-                              borderBottom: i < slaRows.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                              display: "grid", gridTemplateColumns: "1fr 110px 100px", padding: "14px 20px",
+                              borderBottom: "1px solid rgba(255,255,255,0.05)",
                               fontSize: "13px", color: "#d4d4d8", alignItems: "center",
                               opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
                             }}
                           >
-                            <span style={{ color: "var(--ink)", fontWeight: 500 }}>{r.id}</span>
-                            <span style={{ color: "var(--ink2)", fontSize: "12px" }}>{r.desc}</span>
-                            <span>{r.sla}</span>
-                            <span>{r.actual}</span>
-                            <span style={{ color: r.color, fontWeight: 500 }}>{r.status}</span>
+                            <span style={{ color: "var(--ink)", fontWeight: 500 }}>{r.name}</span>
+                            <span style={{ textAlign: "right", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>${r.value.toLocaleString()}</span>
+                            <span style={{ textAlign: "right", color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{r.days} days</span>
                           </div>
                         ))}
+                        <div style={{ padding: "12px 20px", fontSize: "12px", color: "var(--ink2)", fontWeight: 500 }}>
+                          + {estimateMore} more
+                        </div>
                       </div>
-                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "12px 16px", display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#FCA5A5" }}>
-                        <span style={{ fontSize: "16px" }}>⚠️</span>
-                        <span><strong>3 of 5 jobs</strong> breached SLA — avg overrun <strong>2.4 hours</strong></span>
+
+                      {/* Insight callout */}
+                      <div style={{ background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.22)", borderRadius: "12px", padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "rgba(255,196,170,0.95)", lineHeight: 1.55 }}>
+                        <span style={{ fontSize: "16px", lineHeight: 1.2 }}>💡</span>
+                        <span>
+                          Estimates this size close <strong>3× more often</strong> when re-engaged in the first 2 weeks.
+                        </span>
+                      </div>
+
+                      {/* Action button */}
+                      <div style={{ display: "flex" }}>
+                        <button
+                          type="button"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "12px 20px",
+                            borderRadius: "999px",
+                            background: "linear-gradient(135deg, #E85D3A, #C4472A)",
+                            color: "#fff",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            border: "none",
+                            cursor: "pointer",
+                            boxShadow: "0 6px 24px rgba(232,93,58,0.32), 0 2px 6px rgba(0,0,0,0.18)",
+                            transition: "transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s",
+                          }}
+                          onClick={() => handleDeploy("sla")}
+                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                        >
+                          <Sparkles style={{ width: 14, height: 14 }} />
+                          Deploy Sales Coach Agent
+                        </button>
                       </div>
                     </div>
                   )}
