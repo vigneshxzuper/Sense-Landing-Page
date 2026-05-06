@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { SenseChat } from "@/components/ui/sense-chat";
 import ScrollFloat from "@/components/ScrollFloat";
-import { Sparkles } from "lucide-react";
-import { useDeployedTopic } from "@/components/TopicContext";
+import { Sparkles, CheckCircle2, Loader2, Phone, Mail, MessageSquare, Zap } from "lucide-react";
+import { useDeployedTopic, type DeployTopic } from "@/components/TopicContext";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,7 +40,7 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
     >
       <div
         style={{
-          width: "min(1320px, 94%)",
+          width: "min(1240px, 94%)",
           position: "relative",
           opacity: revealed ? 1 : 0,
           transform: revealed
@@ -55,9 +56,9 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
         style={{
           position: "absolute",
           left: "1.25%",
-          top: "4.124%",
+          top: "3.57%",
           right: "1.25%",
-          bottom: "4.124%",
+          bottom: "3.57%",
           borderRadius: "22px",
           background:
             "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.025) 50%, rgba(255,255,255,0.015) 100%)",
@@ -70,7 +71,7 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
         }}
       />
       <svg
-        viewBox="0 0 1600 970"
+        viewBox="0 0 1600 1120"
         preserveAspectRatio="xMidYMid meet"
         style={{
           width: "100%",
@@ -86,13 +87,13 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
       >
         <g
           fill="none"
-          stroke="rgba(255,255,255,0.14)"
-          strokeWidth="1.2"
+          stroke="rgba(255,255,255,0.18)"
+          strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
           {/* Window frame */}
-          <rect x="20" y="40" width="1560" height="890" rx="22" />
+          <rect x="20" y="40" width="1560" height="1040" rx="22" />
           {/* Title bar divider */}
           <line x1="20" y1="110" x2="1580" y2="110" />
         </g>
@@ -105,7 +106,7 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
         </g>
 
         {/* URL pill — centered, minimal */}
-        <rect x="640" y="60" width="320" height="28" rx="14" fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="1.2" />
+        <rect x="640" y="60" width="320" height="28" rx="14" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1.8" />
       </svg>
       </div>
     </div>
@@ -181,9 +182,9 @@ const carrierChartOpts = {
   },
   scales: {
     x: {
-      grid: { color: "rgba(255,255,255,0.05)" },
+      grid: { color: "rgba(255,255,255,0.08)" },
       ticks: {
-        color: "var(--ink2)",
+        color: "rgba(255,255,255,0.7)",
         font: { size: 12 },
         callback: (v: any) => `$${(Number(v) / 1000).toFixed(0)}k`,
       },
@@ -191,7 +192,7 @@ const carrierChartOpts = {
     },
     y: {
       grid: { display: false },
-      ticks: { color: "var(--ink)", font: { size: 13, weight: 500 } },
+      ticks: { color: "#ffffff", font: { size: 13, weight: 500 } },
       border: { display: false },
     },
   },
@@ -238,13 +239,98 @@ function useTypewriter(text: string, speed = 20, active = false) {
 }
 
 /* ── COMPONENT ── */
+type ActVariant = {
+  agent: { name: string; role: string; status: string; tagline: string };
+  steps: string[];
+  capabilities: string[];
+  log: { icon: "call" | "email" | "text"; text: string; time: string }[];
+  recap: { value: string; label: string }[];
+  caption: string;
+};
+
+const ACT_VARIANTS: Record<DeployTopic, ActVariant> = {
+  performance: {
+    agent: { name: "Casey", role: "Collections Agent", status: "Working", tagline: "Collections Agent working those aging supplements live." },
+    steps: ["Pulling supplements aged 30+ days", "Scoring claims by payout likelihood", "Drafting outreach to adjusters", "Placing calls to top 4 carriers", "Logging responses back to the job"],
+    capabilities: ["Carrier AR", "Homeowner balances", "Supplement payouts"],
+    log: [
+      { icon: "call", text: "Called State Farm on claim 47220", time: "4 min ago" },
+      { icon: "email", text: "Escalated Allstate claim AL-2210", time: "11 min ago" },
+      { icon: "call", text: "Called USAA on claim 88041", time: "18 min ago" },
+      { icon: "call", text: "Swept Farmers on 4 smaller claims", time: "26 min ago" },
+    ],
+    recap: [
+      { value: "$31,400", label: "committed Thursday" },
+      { value: "$20,500", label: "in flight" },
+      { value: "$24,020", label: "escalated" },
+    ],
+    caption: "Casey worked 7 stuck supplements · Carrier DSO 72 → 41 days",
+  },
+  sla: {
+    agent: { name: "Morgan", role: "Sales Coach Agent", status: "Working", tagline: "Sales Coach Agent re-engaging your biggest dormant estimates." },
+    steps: ["Ranking estimates by value and age", "Pulling inspection notes for each", "Drafting personalized outreach", "Calling top 5 prospects", "Scheduling second inspections"],
+    capabilities: ["Estimate follow-up", "Objection handling", "Financing options"],
+    log: [
+      { icon: "call", text: "Called Hargrove residence", time: "6 min ago" },
+      { icon: "text", text: "Texted Elmwood HOA board", time: "13 min ago" },
+      { icon: "call", text: "Called Okafor residence", time: "21 min ago" },
+      { icon: "email", text: "Emailed 9 smaller estimates", time: "34 min ago" },
+    ],
+    recap: [
+      { value: "1", label: "walk-through booked" },
+      { value: "$218,500", label: "re-pitched" },
+      { value: "3", label: "warm replies" },
+    ],
+    caption: "Morgan worked 12 dormant estimates · $167K recovered and climbing",
+  },
+  revenue: {
+    agent: { name: "Nova", role: "CSR Agent", status: "Calling back", tagline: "CSR Agent working through yesterday's missed calls, one by one." },
+    steps: ["Transcribing yesterday's voicemails", "Scoring each call by urgency and lead value", "Placing callbacks in priority order", "Booking inspections that qualify", "Flagging calls that need you personally"],
+    capabilities: ["Call triage", "Callbacks and scheduling", "Routing to the owner"],
+    log: [
+      { icon: "call", text: "Called back the storm damage lead", time: "7 min ago" },
+      { icon: "call", text: "Called Meridian Builders", time: "15 min ago" },
+      { icon: "call", text: "Reached 4 new residential leads", time: "23 min ago" },
+      { icon: "email", text: "Answered Mrs. Delacroix's warranty question", time: "31 min ago" },
+    ],
+    recap: [
+      { value: "3", label: "inspections booked" },
+      { value: "1", label: "flagged for you" },
+      { value: "2", label: "left to reach" },
+    ],
+    caption: "Nova worked 11 missed calls in 31 minutes · Storm lead on the truck before coffee went cold",
+  },
+};
+
 export default function AnalyzeSection() {
   const [topic, setTopic] = useState<Topic>(null);
-  const { setDeployedTopic } = useDeployedTopic();
+  const [view, setView] = useState<"ask" | "analyze" | "act">("ask");
+  const { deployedTopic, setDeployedTopic } = useDeployedTopic();
+  const [actCompleted, setActCompleted] = useState<number[]>([]);
+  const [actActive, setActActive] = useState(-1);
   const handleDeploy = (variant: "performance" | "sla" | "revenue") => {
     setDeployedTopic(variant);
-    document.querySelector("#act-section")?.scrollIntoView({ behavior: "smooth" });
+    setView("act");
   };
+  const VIEW_INDEX: Record<"ask" | "analyze" | "act", number> = { ask: 0, analyze: 1, act: 2 };
+  // Smaller slide distance + opacity so we don't need overflow:hidden (which clipped the Mac shadow).
+  const offsetFor = (own: "ask" | "analyze" | "act") => (VIEW_INDEX[own] - VIEW_INDEX[view]) * 28;
+  const isActive = (own: "ask" | "analyze" | "act") => own === view;
+  const slideTransition = "transform 760ms cubic-bezier(0.65, 0, 0.35, 1), opacity 600ms cubic-bezier(0.65, 0, 0.35, 1)";
+
+  // Run the Act stepper sequence whenever view enters "act".
+  useEffect(() => {
+    if (view !== "act") return;
+    setActCompleted([]);
+    setActActive(-1);
+    const variant = ACT_VARIANTS[deployedTopic];
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    variant.steps.forEach((_, i) => {
+      timers.push(setTimeout(() => setActActive(i), i * 720));
+      timers.push(setTimeout(() => setActCompleted((p) => [...p, i]), i * 720 + 540));
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [view, deployedTopic]);
   const [showQuestion, setShowQuestion] = useState(false);
   const [showAiResponse, setShowAiResponse] = useState(false);
   const [showChart, setShowChart] = useState(false);
@@ -295,11 +381,14 @@ export default function AnalyzeSection() {
 
   const parallaxOffset = (askProgress - 0.5) * -50;
 
+  const [selectedIdx, setSelectedIdx] = useState(0);
   const triggerTopic = (t: Topic) => {
     setShowQuestion(false);
     setShowAiResponse(false);
     setShowChart(false);
     setTopic(t);
+    setSelectedIdx(0);
+    setView("analyze");
     setTimeout(() => setShowQuestion(true), 100);
     setTimeout(() => setShowAiResponse(true), 350);
   };
@@ -314,22 +403,7 @@ export default function AnalyzeSection() {
     return () => window.removeEventListener("sense-chip-click", handler);
   }, []);
 
-  // Auto-trigger "revenue" when section scrolls into view
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !hasTriggered.current) {
-          hasTriggered.current = true;
-          triggerTopic("revenue");
-        }
-      },
-      { threshold: 0.1 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  // No auto-trigger — page lands on the Ask view; user picks a prompt to advance.
 
   const cardStyle: React.CSSProperties = {
     background: "var(--card-bg)",
@@ -345,7 +419,7 @@ export default function AnalyzeSection() {
       ref={sectionRef}
       style={{ background: "var(--bg)", padding: "0 24px", position: "relative" }}
     >
-      {/* Ask — centered header + chat */}
+      {/* Ask — centered header + chat. View state swaps Ask / Analyze / Act inside the Mac window. */}
       <div ref={askRef} style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "160px 0", position: "relative" }}>
         <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={parallaxOffset} />
         <div
@@ -356,9 +430,16 @@ export default function AnalyzeSection() {
             width: "100%",
             position: "relative",
             zIndex: 1,
-            transform: `translateY(${(1 - Math.min(1, askProgress / 0.3)) * 24}px)`,
-            opacity: Math.min(1, askProgress / 0.25),
-            transition: "none",
+            transform:
+              view === "ask"
+                ? `translateY(calc(${(1 - Math.min(1, askProgress / 0.3)) * 24}px))`
+                : `translateY(${offsetFor("ask")}%)`,
+            opacity: view === "ask" ? Math.min(1, askProgress / 0.25) : 0,
+            pointerEvents: view === "ask" ? "auto" : "none",
+            transition:
+              view === "ask" && askProgress < 1
+                ? "none"
+                : slideTransition,
           }}
         >
           <div style={{ marginBottom: "40px" }}>
@@ -376,18 +457,35 @@ export default function AnalyzeSection() {
         </div>
       </div>
 
-      {/* Analyze — conversation + charts */}
-      <div id="analyze-content" style={{ maxWidth: "900px", margin: "0 auto", padding: "160px 0" }}>
-        <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "14px" }}>
+      {/* Analyze — chat + chart, overlays the Mac window when view === "analyze" */}
+      <div
+        id="analyze-content"
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2,
+          opacity: isActive("analyze") ? 1 : 0,
+          transform: `translateY(${offsetFor("analyze")}%)`,
+          pointerEvents: view === "analyze" ? "auto" : "none",
+          transition: slideTransition,
+        }}
+      >
+        <div style={{ width: "min(1240px, 94vw)", height: "min(868px, 65.8vw)", maxHeight: "88vh", position: "relative" }}>
+        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
+        <h2 style={{ fontSize: "clamp(22px, 2.6vw, 30px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.25, color: "var(--ink)", marginBottom: "4px", marginTop: 0 }}>
           Analyze.
-        </ScrollFloat>
-        <p style={{ fontSize: "clamp(15px, 1.6vw, 17px)", color: "var(--ink2)", lineHeight: 1.5, maxWidth: "560px", margin: "0 0 40px 0", fontWeight: 400 }}>
+        </h2>
+        <p style={{ fontSize: "12px", color: "var(--ink2)", lineHeight: 1.5, margin: "0 0 10px 0", fontWeight: 400 }}>
           See how Sense breaks down the answer.
         </p>
 
+
         {/* Chat conversation */}
         {topic && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxWidth: "760px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
 
             {/* User question bubble */}
             <div
@@ -466,8 +564,8 @@ export default function AnalyzeSection() {
                     background: "var(--surface)",
                     border: "1px solid var(--card-border)",
                     borderRadius: "4px 16px 16px 16px",
-                    padding: "16px 20px",
-                    fontSize: "14px",
+                    padding: "10px 14px",
+                    fontSize: "13px",
                     color: "var(--ink2)",
                     lineHeight: 1.7,
                     minHeight: "60px",
@@ -492,7 +590,7 @@ export default function AnalyzeSection() {
                 {/* Chart / Data — slides in after typing */}
                 <div
                   style={{
-                    marginTop: "16px",
+                    marginTop: "10px",
                     opacity: showChart ? 1 : 0,
                     transform: showChart ? "translateY(0)" : "translateY(20px)",
                     transition: "all 0.7s cubic-bezier(0.22, 1, 0.36, 1)",
@@ -505,23 +603,23 @@ export default function AnalyzeSection() {
                       {/* KPI row */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: "var(--glass-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--card-border)" }}>
                         {missedCallKpis.map((k) => (
-                          <div key={k.label} style={{ background: "var(--surface)", padding: "18px 20px" }}>
+                          <div key={k.label} style={{ background: "var(--surface)", padding: "12px 16px" }}>
                             <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
-                            <div style={{ fontSize: "26px", fontWeight: 700, color: k.accent || "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
+                            <div style={{ fontSize: "22px", fontWeight: 700, color: k.accent || "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
                           </div>
                         ))}
                       </div>
 
                       {/* Sorted table — missed calls by urgency */}
                       <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "70px 150px 1fr 80px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "70px 150px 1fr 80px", padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                           <span>Time</span><span>Caller</span><span>Reason</span><span style={{ textAlign: "right" }}>Value</span>
                         </div>
                         {missedCallRows.map((r, i) => (
                           <div
                             key={i}
                             style={{
-                              display: "grid", gridTemplateColumns: "70px 150px 1fr 80px", padding: "14px 20px", gap: "8px",
+                              display: "grid", gridTemplateColumns: "70px 150px 1fr 80px", padding: "10px 16px", gap: "8px",
                               borderBottom: "1px solid rgba(255,255,255,0.05)",
                               fontSize: "13px", color: "#d4d4d8", alignItems: "center",
                               opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
@@ -538,13 +636,13 @@ export default function AnalyzeSection() {
                             <span style={{ textAlign: "right", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{r.value}</span>
                           </div>
                         ))}
-                        <div style={{ padding: "12px 20px", fontSize: "12px", color: "var(--ink2)", fontWeight: 500 }}>
+                        <div style={{ padding: "8px 16px", fontSize: "12px", color: "var(--ink2)", fontWeight: 500 }}>
                           + {missedCallMore} more
                         </div>
                       </div>
 
                       {/* Insight callout */}
-                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "#FCA5A5", lineHeight: 1.55 }}>
+                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "#FCA5A5", lineHeight: 1.55 }}>
                         <span style={{ fontSize: "16px", lineHeight: 1.2 }}>⚠️</span>
                         <span>
                           <strong>The storm caller is the priority.</strong> Same zip code as Tuesday&apos;s hail report and they&apos;re calling a competitor next if no one picks up.
@@ -559,7 +657,7 @@ export default function AnalyzeSection() {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "8px",
-                            padding: "12px 20px",
+                            padding: "8px 16px",
                             borderRadius: "999px",
                             background: "linear-gradient(135deg, #E85D3A, #C4472A)",
                             color: "#fff",
@@ -584,37 +682,40 @@ export default function AnalyzeSection() {
                   {/* PERFORMANCE — Aging supplements by carrier */}
                   {topic === "performance" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      {/* Horizontal bar — $ pending by carrier */}
-                      <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
-                        <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>$ pending by carrier</div>
-                        <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>Outstanding supplement value across carriers</div>
-                        <div style={{ height: "240px" }}><Bar data={carrierAgingChart} options={carrierChartOpts as any} /></div>
-                      </div>
-
-                      {/* Table — carrier rows */}
-                      <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 90px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                          <span>Carrier</span><span style={{ textAlign: "right" }}>Pending</span><span style={{ textAlign: "right" }}>Days aging</span>
+                      {/* Chart + table side-by-side */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "stretch" }}>
+                        {/* Horizontal bar — $ pending by carrier */}
+                        <div style={{ ...cardStyle, boxShadow: "none", position: "relative", overflow: "hidden" }}>
+                          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", marginBottom: "4px" }}>$ pending by carrier</div>
+                          <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "20px" }}>Outstanding supplement value across carriers</div>
+                          <div style={{ height: "140px" }}><Bar data={carrierAgingChart} options={carrierChartOpts as any} /></div>
                         </div>
-                        {carrierAgingRows.map((r, i) => (
-                          <div
-                            key={r.carrier}
-                            style={{
-                              display: "grid", gridTemplateColumns: "1fr 110px 90px", padding: "14px 20px",
-                              borderBottom: i < carrierAgingRows.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
-                              fontSize: "13px", color: "#d4d4d8", alignItems: "center",
-                              opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
-                            }}
-                          >
-                            <span style={{ color: "var(--ink)", fontWeight: 500 }}>{r.carrier}</span>
-                            <span style={{ textAlign: "right", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>${r.pending.toLocaleString()}</span>
-                            <span style={{ textAlign: "right", color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{r.days} days</span>
+
+                        {/* Table — carrier rows */}
+                        <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 90px", padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                            <span>Carrier</span><span style={{ textAlign: "right" }}>Pending</span><span style={{ textAlign: "right" }}>Days aging</span>
                           </div>
-                        ))}
+                          {carrierAgingRows.map((r, i) => (
+                            <div
+                              key={r.carrier}
+                              style={{
+                                display: "grid", gridTemplateColumns: "1fr 110px 90px", padding: "10px 16px",
+                                borderBottom: i < carrierAgingRows.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                                fontSize: "13px", color: "#d4d4d8", alignItems: "center",
+                                opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
+                              }}
+                            >
+                              <span style={{ color: "var(--ink)", fontWeight: 500 }}>{r.carrier}</span>
+                              <span style={{ textAlign: "right", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>${r.pending.toLocaleString()}</span>
+                              <span style={{ textAlign: "right", color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{r.days} days</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
                       {/* Insight callout */}
-                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "#FCA5A5", lineHeight: 1.55 }}>
+                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "#FCA5A5", lineHeight: 1.55 }}>
                         <span style={{ fontSize: "16px", lineHeight: 1.2 }}>⚠️</span>
                         <span>
                           <strong>State Farm is the biggest exposure.</strong> 3 of the 7 claims sit with one adjuster.
@@ -629,7 +730,7 @@ export default function AnalyzeSection() {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "8px",
-                            padding: "12px 20px",
+                            padding: "8px 16px",
                             borderRadius: "999px",
                             background: "linear-gradient(135deg, #E85D3A, #C4472A)",
                             color: "#fff",
@@ -659,23 +760,23 @@ export default function AnalyzeSection() {
                       {/* KPI row */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1px", background: "var(--glass-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--card-border)" }}>
                         {estimateKpis.map((k) => (
-                          <div key={k.label} style={{ background: "var(--surface)", padding: "18px 20px" }}>
+                          <div key={k.label} style={{ background: "var(--surface)", padding: "12px 16px" }}>
                             <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
-                            <div style={{ fontSize: "26px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
+                            <div style={{ fontSize: "22px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
                           </div>
                         ))}
                       </div>
 
                       {/* Sorted table */}
                       <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 100px", padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 100px", padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                           <span>Estimate</span><span style={{ textAlign: "right" }}>Value</span><span style={{ textAlign: "right" }}>Days aging</span>
                         </div>
                         {estimateRows.map((r, i) => (
                           <div
                             key={r.name}
                             style={{
-                              display: "grid", gridTemplateColumns: "1fr 110px 100px", padding: "14px 20px",
+                              display: "grid", gridTemplateColumns: "1fr 110px 100px", padding: "10px 16px",
                               borderBottom: "1px solid rgba(255,255,255,0.05)",
                               fontSize: "13px", color: "#d4d4d8", alignItems: "center",
                               opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
@@ -686,13 +787,13 @@ export default function AnalyzeSection() {
                             <span style={{ textAlign: "right", color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{r.days} days</span>
                           </div>
                         ))}
-                        <div style={{ padding: "12px 20px", fontSize: "12px", color: "var(--ink2)", fontWeight: 500 }}>
+                        <div style={{ padding: "8px 16px", fontSize: "12px", color: "var(--ink2)", fontWeight: 500 }}>
                           + {estimateMore} more
                         </div>
                       </div>
 
                       {/* Insight callout */}
-                      <div style={{ background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.22)", borderRadius: "12px", padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "rgba(255,196,170,0.95)", lineHeight: 1.55 }}>
+                      <div style={{ background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.22)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "rgba(255,196,170,0.95)", lineHeight: 1.55 }}>
                         <span style={{ fontSize: "16px", lineHeight: 1.2 }}>💡</span>
                         <span>
                           Estimates this size close <strong>3× more often</strong> when re-engaged in the first 2 weeks.
@@ -707,7 +808,7 @@ export default function AnalyzeSection() {
                             display: "inline-flex",
                             alignItems: "center",
                             gap: "8px",
-                            padding: "12px 20px",
+                            padding: "8px 16px",
                             borderRadius: "999px",
                             background: "linear-gradient(135deg, #E85D3A, #C4472A)",
                             color: "#fff",
@@ -739,6 +840,128 @@ export default function AnalyzeSection() {
             Select a question above to see the analysis
           </div>
         )}
+
+        </div>
+        </div>
+      </div>
+
+      {/* Act overlay — shows when view === "act" */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 2,
+          opacity: isActive("act") ? 1 : 0,
+          transform: `translateY(${offsetFor("act")}%)`,
+          pointerEvents: view === "act" ? "auto" : "none",
+          transition: slideTransition,
+        }}
+      >
+        <div style={{ width: "min(1240px, 94vw)", height: "min(868px, 65.8vw)", maxHeight: "88vh", position: "relative" }}>
+        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
+          <h2 style={{ fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.25, color: "var(--ink)", marginBottom: "6px", marginTop: 0 }}>
+            Act.
+          </h2>
+          <p style={{ fontSize: "clamp(13px, 1.3vw, 14px)", color: "var(--ink2)", lineHeight: 1.5, maxWidth: "560px", margin: "0 0 18px 0", fontWeight: 400 }}>
+            {ACT_VARIANTS[deployedTopic].agent.tagline}
+          </p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            {/* Agent + steps */}
+            <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "14px" }}>
+                <div
+                  style={{
+                    position: "relative",
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                    background: "linear-gradient(135deg, #2A1810, #1a0e08)",
+                    border: "1px solid rgba(232,93,58,0.35)",
+                    boxShadow: "0 4px 14px -4px rgba(232,93,58,0.45), inset 0 1px 0 rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <Image
+                    src="/assets/agent-casey.png"
+                    alt={`${ACT_VARIANTS[deployedTopic].agent.name} portrait`}
+                    fill
+                    sizes="64px"
+                    style={{ objectFit: "cover", objectPosition: "center top" }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--ink)" }}>{ACT_VARIANTS[deployedTopic].agent.name}</div>
+                  <div style={{ fontSize: "12px", color: "var(--ink3)" }}>{ACT_VARIANTS[deployedTopic].agent.role}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px #22C55E" }} />
+                  <span style={{ fontSize: "10px", color: "#4ADE80" }}>{ACT_VARIANTS[deployedTopic].agent.status}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "14px" }}>
+                {ACT_VARIANTS[deployedTopic].capabilities.map((tag) => (
+                  <span key={tag} style={{ background: "var(--glass-bg)", border: "1px solid var(--card-border)", borderRadius: "5px", padding: "2px 8px", fontSize: "10px", color: "var(--ink2)" }}>{tag}</span>
+                ))}
+              </div>
+              {ACT_VARIANTS[deployedTopic].steps.map((label, i) => {
+                const done = actCompleted.includes(i);
+                const active = actActive === i && !done;
+                return (
+                  <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start", opacity: actActive >= i ? 1 : 0.3, transition: "opacity 0.4s", marginBottom: "8px" }}>
+                    <div style={{ width: "16px", height: "16px", flexShrink: 0, marginTop: "1px" }}>
+                      {done ? (
+                        <CheckCircle2 className="w-4 h-4" style={{ color: "var(--green)" }} />
+                      ) : active ? (
+                        <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#E85D3A" }} />
+                      ) : (
+                        <div style={{ width: "14px", height: "14px", borderRadius: "50%", border: "1.5px solid #3F3F46" }} />
+                      )}
+                    </div>
+                    <div style={{ fontSize: "12px", color: done ? "#A1A1AA" : active ? "#FAFAFA" : "#52525B" }}>{label}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Activity feed */}
+            <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px #22C55E" }} />
+                <span style={{ fontSize: "10px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{ACT_VARIANTS[deployedTopic].agent.name} · Live activity</span>
+              </div>
+              {ACT_VARIANTS[deployedTopic].log.map((entry, i) => (
+                <div key={i} style={{ display: "flex", gap: "8px", marginBottom: i < ACT_VARIANTS[deployedTopic].log.length - 1 ? "8px" : 0, paddingBottom: i < ACT_VARIANTS[deployedTopic].log.length - 1 ? "8px" : 0, borderBottom: i < ACT_VARIANTS[deployedTopic].log.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                  <div style={{ marginTop: "2px", flexShrink: 0, color: entry.icon === "call" ? "#60a5fa" : entry.icon === "text" ? "#34d399" : "#a78bfa" }}>
+                    {entry.icon === "call" ? <Phone className="w-3 h-3" /> : entry.icon === "text" ? <MessageSquare className="w-3 h-3" /> : <Mail className="w-3 h-3" />}
+                  </div>
+                  <div style={{ flex: 1, fontSize: "12px", color: "var(--ink)" }}>{entry.text}</div>
+                  <div style={{ fontSize: "10px", color: "var(--ink3)", whiteSpace: "nowrap", marginTop: "2px" }}>{entry.time}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recap */}
+          <div style={{ marginTop: "12px", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "16px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+              {ACT_VARIANTS[deployedTopic].recap.map((r) => (
+                <div key={r.label} style={{ background: "rgba(34,197,94,0.06)", borderRadius: "10px", padding: "10px", textAlign: "center" }}>
+                  <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--green)", letterSpacing: "-0.02em" }}>{r.value}</div>
+                  <div style={{ fontSize: "10px", color: "#86EFAC", marginTop: "2px" }}>{r.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--ink3)", marginTop: "10px", textAlign: "center" }}>
+              {ACT_VARIANTS[deployedTopic].caption}
+            </div>
+          </div>
+        </div>
+        </div>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

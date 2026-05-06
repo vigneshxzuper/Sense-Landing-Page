@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import { useTheme } from "@/components/ThemeProvider";
@@ -19,17 +19,39 @@ export default function HeroSectionStatic() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [mounted, setMounted] = useState(false);
+  // CRT "power-on" boot — fires once when the section first scrolls into
+  // view, picking up the visual baton from HeroScrollAnimation's monitor zoom.
+  const [booted, setBooted] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setBooted(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.18 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
+      className={booted ? "crt-boot booted" : "crt-boot"}
       style={{
         position: "relative",
-        minHeight: "100vh",
+        minHeight: "112vh",
         background: "var(--bg)",
         overflow: "hidden",
         display: "flex",
@@ -39,6 +61,10 @@ export default function HeroSectionStatic() {
         transition: "background 0.5s",
       }}
     >
+      {/* CRT power-on flash + scanline */}
+      <div aria-hidden className="crt-boot-flash" />
+      <div aria-hidden className="crt-boot-scanline" />
+      <div className="crt-boot-inner" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
       {/* Blinds backdrop in dark mode */}
       {isDark && (
         <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
@@ -55,6 +81,7 @@ export default function HeroSectionStatic() {
             distortAmount={0}
             shineDirection="left"
             mixBlendMode="lighten"
+            staticFrame
           />
         </div>
       )}
@@ -81,7 +108,6 @@ export default function HeroSectionStatic() {
             transition: "opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), color 0.5s",
           }}
         >
-          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#E85D3A", boxShadow: "0 0 8px rgba(232,93,58,0.8)", flexShrink: 0 }} />
           Zuper Sense &middot; Intelligence Layer
         </div>
 
@@ -144,25 +170,14 @@ export default function HeroSectionStatic() {
             const innerBg = primary ? (isDark ? "#ffffff" : "#111111") : isDark ? "rgba(20,20,20,0.9)" : "rgba(245,245,245,0.95)";
             const innerColor = primary ? (isDark ? "#111" : "#ffffff") : isDark ? "rgba(255,255,255,0.92)" : "#1a1714";
             return (
-              <a
+              <div
                 key={btn.label}
-                href={btn.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.querySelector(btn.href)?.scrollIntoView({ behavior: "smooth" });
-                }}
+                className={primary ? "hero-cta btn-glow-primary" : "hero-cta btn-glow-secondary"}
                 style={{
+                  position: "relative",
                   display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "14px 32px",
                   borderRadius: "999px",
-                  background: innerBg,
-                  color: innerColor,
-                  fontSize: "16px",
-                  fontWeight: 500,
-                  textDecoration: "none",
-                  letterSpacing: "-0.005em",
+                  padding: "1.5px",
                   boxShadow: primary
                     ? isDark
                       ? "0 6px 24px rgba(232,93,58,0.25), 0 2px 8px rgba(0,0,0,0.3)"
@@ -170,16 +185,123 @@ export default function HeroSectionStatic() {
                     : "none",
                   transition: "transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
               >
-                {btn.icon}
-                {btn.label}
-              </a>
+                <a
+                  href={btn.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.querySelector(btn.href)?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "14px 32px",
+                    borderRadius: "999px",
+                    background: innerBg,
+                    color: innerColor,
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    textDecoration: "none",
+                    letterSpacing: "-0.005em",
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                    {btn.icon}
+                    <span className="cta-roll-word" aria-label={btn.label}>
+                      {Array.from(btn.label).map((ch, i) => (
+                        <span
+                          key={i}
+                          className="cta-roll"
+                          style={{ transitionDelay: `${i * 22}ms` }}
+                          aria-hidden
+                        >
+                          <span
+                            className="cta-roll-inner"
+                            style={{ transitionDelay: `${i * 22}ms` }}
+                          >
+                            <span className="cta-roll-line">{ch === " " ? " " : ch}</span>
+                            <span className="cta-roll-line">{ch === " " ? " " : ch}</span>
+                          </span>
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                </a>
+              </div>
             );
           })}
         </div>
       </div>
+      </div>
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @property --angle-p {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+        @property --angle-s {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+        @keyframes btn-spin-p {
+          to { --angle-p: 360deg; }
+        }
+        @keyframes btn-spin-s {
+          to { --angle-s: 360deg; }
+        }
+        .btn-glow-primary {
+          background: conic-gradient(from var(--angle-p), transparent 0%, transparent 50%, rgba(251,146,60,1) 68%, rgba(255,220,180,1) 80%, rgba(251,146,60,1) 92%, transparent 100%);
+          animation: btn-spin-p 2.5s linear infinite;
+        }
+        .btn-glow-secondary {
+          background: conic-gradient(from var(--angle-s), transparent 0%, transparent 70%, rgba(180,180,180,0.25) 82%, rgba(220,220,220,0.3) 88%, rgba(180,180,180,0.25) 94%, transparent 100%);
+          animation: btn-spin-s 4s linear infinite;
+        }
+        .hero-cta:hover {
+          transform: translateY(-1px) !important;
+        }
+        .hero-cta:active {
+          transform: translateY(0) !important;
+        }
+        .cta-roll-word {
+          display: inline-flex;
+          vertical-align: middle;
+          line-height: 1.2;
+        }
+        .cta-roll {
+          position: relative;
+          display: inline-block;
+          overflow: hidden;
+          height: 1.2em;
+          line-height: 1.2;
+          min-height: 0;
+          flex: 0 0 auto;
+          vertical-align: middle;
+        }
+        .cta-roll-inner {
+          display: block;
+          transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+          will-change: transform;
+        }
+        .cta-roll-line {
+          display: block;
+          height: 1.2em;
+          line-height: 1.2;
+          white-space: pre;
+        }
+        .hero-cta:hover .cta-roll-inner {
+          transform: translateY(-1.2em);
+        }
+      `,
+        }}
+      />
     </section>
   );
 }

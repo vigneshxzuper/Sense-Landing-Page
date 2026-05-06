@@ -43,14 +43,13 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
   // 0-0.10: fade in scattered
   // 0.10-0.22: dwell
   // 0.22-0.48: fly to grid
-  // icons fade out over the last stretch of the morph
   const entryOpacity = useTransform(progress, [0.0, 0.12 + sDrift], [0, 1]);
   const morphStart = 0.22 + sDrift;
   const morphEnd = 0.48 + sDrift;
-  const iconFadeStart = morphStart + 0.14;
-  const iconFadeEnd = morphEnd;
 
-  const iconOpacity = useTransform(progress, [iconFadeStart, iconFadeEnd], [1, 0]);
+  // Glyphs stay fully opaque through the whole morph — final 3×3 grid reads
+  // as crisp icons rather than blank tiles.
+  const iconOpacity = useTransform(progress, [0, 1], [1, 1]);
 
   const xRaw = useTransform(progress, [morphStart, morphEnd], [from.x, to.x]);
   const yRaw = useTransform(progress, [morphStart, morphEnd], [from.y, to.y]);
@@ -72,6 +71,12 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
         position: "absolute",
         width: "96px",
         height: "96px",
+        // Static -50% offset so x/y address the tile's CENTER, not its
+        // top-left. Without these, the symmetric GRID values [-118, 0, 118]
+        // produce visual centres at [-70, 48, 166] and the grid drifts
+        // right by half a tile.
+        left: "-48px",
+        top: "-48px",
         x, y, rotate, scale,
         opacity: entryOpacity,
         willChange: "transform, opacity",
@@ -179,7 +184,7 @@ export default function DocsAnimation() {
     offset: ["start start", "end end"],
   });
 
-  const auroraOpacity = useTransform(scrollYProgress, [0.0, 0.12, 0.25, 0.48, 1], [0, 0.8, 0.5, 0, 0]);
+  const auroraOpacity = useTransform(scrollYProgress, [0.0, 0.12, 0.25, 0.48, 1], [0, 0.85, 0.7, 0.55, 0.55]);
   const auroraY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
   const grainOpacity = useTransform(scrollYProgress, [0.0, 0.12, 0.40, 0.9], [0, 0.25, 0, 0]);
 
@@ -276,7 +281,7 @@ export default function DocsAnimation() {
             pointerEvents: "none",
           }}
         >
-          <div style={{ position: "relative", width: 0, height: 0, transform: "translateY(-140px)" }}>
+          <div style={{ position: "relative", width: 0, height: 0, transform: "translateY(-180px)" }}>
             {ICONS.map((_, i) => (
               <FlyingDoc
                 key={i}
@@ -295,13 +300,13 @@ export default function DocsAnimation() {
             y: headlineY,
             position: "relative",
             zIndex: 5,
-            marginTop: "180px",
+            marginTop: "340px",
           }}
         >
-          <h2 style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 700, letterSpacing: "-0.04em", color: "var(--ink)", lineHeight: 1.1, marginBottom: "12px" }}>
-            Every document. Every insight. One place.
+          <h2 style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 700, letterSpacing: "-0.04em", color: "var(--ink)", lineHeight: 1.1, marginBottom: "12px", maxWidth: "640px", marginLeft: "auto", marginRight: "auto" }}>
+            Entire Zuper inside a prompt box.
           </h2>
-          <p style={{ fontSize: "16px", color: "var(--ink2)", maxWidth: "480px", margin: "0 auto", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "16px", color: "var(--ink2)", maxWidth: "440px", margin: "0 auto", lineHeight: 1.6 }}>
             Quotes, invoices, work orders, contracts — Sense ingests it all and turns it into answers you can act on.
           </p>
         </motion.div>

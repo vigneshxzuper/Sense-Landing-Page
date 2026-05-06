@@ -221,16 +221,6 @@ export default function HeroSection() {
                 y: reduce ? 0 : sidekickY,
               }}
             >
-              <span
-                style={{
-                  width: "7px",
-                  height: "7px",
-                  borderRadius: "50%",
-                  background: "#E85D3A",
-                  boxShadow: "0 0 8px rgba(232,93,58,0.8)",
-                  flexShrink: 0,
-                }}
-              />
               Zuper Sense &middot; Intelligence Layer
             </motion.div>
 

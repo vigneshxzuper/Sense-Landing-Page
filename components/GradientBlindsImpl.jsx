@@ -36,7 +36,8 @@ const GradientBlinds = ({
   spotlightOpacity = 1,
   distortAmount = 0,
   shineDirection = 'left',
-  mixBlendMode = 'lighten'
+  mixBlendMode = 'lighten',
+  staticFrame = false
 }) => {
   const containerRef = useRef(null);
   const rafRef = useRef(null);
@@ -249,6 +250,23 @@ void main() {
         uniforms.iMouse.value = [cx, cy];
         mouseTargetRef.current = [cx, cy];
       }
+
+      // Static mode: pin spotlight to bottom-left + re-render after each
+      // resize so the frozen frame stays in sync with new viewport size.
+      // Note: iMouse uses WebGL convention — y=0 is the bottom of the canvas.
+      if (staticFrame) {
+        const sx = gl.drawingBufferWidth * 0.12;
+        const sy = gl.drawingBufferHeight * 0.12;
+        uniforms.iMouse.value = [sx, sy];
+        mouseTargetRef.current = [sx, sy];
+        if (programRef.current && meshRef.current) {
+          try {
+            renderer.render({ scene: meshRef.current });
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
     };
 
     resize();
@@ -265,34 +283,56 @@ void main() {
         uniforms.iMouse.value = [x, y];
       }
     };
-    window.addEventListener('pointermove', onPointerMove);
+    if (!staticFrame) {
+      window.addEventListener('pointermove', onPointerMove);
+    }
 
-    const loop = t => {
-      rafRef.current = requestAnimationFrame(loop);
-      uniforms.iTime.value = t * 0.001;
-      if (mouseDampening > 0) {
-        if (!lastTimeRef.current) lastTimeRef.current = t;
-        const dt = (t - lastTimeRef.current) / 1000;
-        lastTimeRef.current = t;
-        const tau = Math.max(1e-4, mouseDampening);
-        let factor = 1 - Math.exp(-dt / tau);
-        if (factor > 1) factor = 1;
-        const target = mouseTargetRef.current;
-        const cur = uniforms.iMouse.value;
-        cur[0] += (target[0] - cur[0]) * factor;
-        cur[1] += (target[1] - cur[1]) * factor;
-      } else {
-        lastTimeRef.current = t;
-      }
-      if (!paused && programRef.current && meshRef.current) {
-        try {
-          renderer.render({ scene: meshRef.current });
-        } catch (e) {
-          console.error(e);
+    if (staticFrame) {
+      // Render one frozen frame: lock iTime + iMouse to a stable value, draw
+      // once, never animate again. Spotlight pinned to bottom-left.
+      uniforms.iTime.value = 0;
+      const sx = gl.drawingBufferWidth * 0.12;
+      const sy = gl.drawingBufferHeight * 0.12;
+      uniforms.iMouse.value = [sx, sy];
+      mouseTargetRef.current = [sx, sy];
+      // Defer one frame so geometry/uniforms are fully wired before draw.
+      rafRef.current = requestAnimationFrame(() => {
+        if (programRef.current && meshRef.current) {
+          try {
+            renderer.render({ scene: meshRef.current });
+          } catch (e) {
+            console.error(e);
+          }
         }
-      }
-    };
-    rafRef.current = requestAnimationFrame(loop);
+      });
+    } else {
+      const loop = t => {
+        rafRef.current = requestAnimationFrame(loop);
+        uniforms.iTime.value = t * 0.001;
+        if (mouseDampening > 0) {
+          if (!lastTimeRef.current) lastTimeRef.current = t;
+          const dt = (t - lastTimeRef.current) / 1000;
+          lastTimeRef.current = t;
+          const tau = Math.max(1e-4, mouseDampening);
+          let factor = 1 - Math.exp(-dt / tau);
+          if (factor > 1) factor = 1;
+          const target = mouseTargetRef.current;
+          const cur = uniforms.iMouse.value;
+          cur[0] += (target[0] - cur[0]) * factor;
+          cur[1] += (target[1] - cur[1]) * factor;
+        } else {
+          lastTimeRef.current = t;
+        }
+        if (!paused && programRef.current && meshRef.current) {
+          try {
+            renderer.render({ scene: meshRef.current });
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      };
+      rafRef.current = requestAnimationFrame(loop);
+    }
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);

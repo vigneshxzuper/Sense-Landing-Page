@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 import { Sun, Moon, ChevronDown } from "lucide-react";
 import NavZuperAIMenu from "./NavZuperAIMenu";
@@ -22,6 +22,25 @@ export default function Navbar() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Hide the nav while the user is still inside HeroScrollAnimation
+  // (file slide + zoom-into-monitor). Show it the moment scroll passes
+  // the hero pin (≈500vh, since the hero section pins for 500% of scroll).
+  // Threshold sits at 460vh — a touch before pin release so the nav
+  // settles in alongside HeroSectionStatic's CRT-boot reveal.
+  const [navReady, setNavReady] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY > window.innerHeight * 4.6) {
+        if (!navReady) setNavReady(true);
+      } else if (navReady) {
+        setNavReady(false);
+      }
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [navReady]);
+
   const openWithLabel = (label: string) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setOpenMenu(label);
@@ -37,7 +56,13 @@ export default function Navbar() {
         position: "fixed",
         top: "14px",
         left: "50%",
-        transform: "translateX(-50%)",
+        transform: navReady
+          ? "translateX(-50%) translateY(0)"
+          : "translateX(-50%) translateY(-120%)",
+        opacity: navReady ? 1 : 0,
+        pointerEvents: navReady ? "auto" : "none",
+        transition:
+          "opacity 480ms cubic-bezier(0.22, 1, 0.36, 1), transform 480ms cubic-bezier(0.22, 1, 0.36, 1)",
         zIndex: 9999,
         width: "calc(100% - 48px)",
         maxWidth: "1100px",

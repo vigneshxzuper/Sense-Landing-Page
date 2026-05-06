@@ -193,7 +193,6 @@ export default function ShowcaseSection() {
     <section id="showcase-section" ref={sectionRef} style={{ background: "#000", padding: "160px 0", minHeight: "100vh", overflow: "hidden" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto 56px", padding: "0 24px" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.2)", borderRadius: "100px", padding: "5px 14px", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "20px" }}>
-          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#E85D3A" }} />
           Anywhere in Zuper
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "24px" }}>

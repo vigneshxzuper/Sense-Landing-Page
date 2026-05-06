@@ -133,7 +133,6 @@ export default function RadarSection() {
         {/* Header */}
         <div style={{ marginBottom: "16px" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.2)", borderRadius: "100px", padding: "5px 14px", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "20px" }}>
-            <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#E85D3A" }} />
             Task Radar
           </div>
           <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "8px" }}>
@@ -151,9 +150,9 @@ export default function RadarSection() {
               key={k.label}
               style={{
                 ...card,
-                background: `linear-gradient(160deg, ${k.tint} 0%, var(--surface2) 100%)`,
-                border: `1px solid ${k.glow}`,
-                boxShadow: `0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px ${k.glow}`,
+                background: "var(--card-bg)",
+                border: "1px solid var(--card-border)",
+                boxShadow: "none",
                 position: "relative",
                 overflow: "hidden",
                 ...stagger(i),
@@ -205,8 +204,8 @@ export default function RadarSection() {
             <div
               key={a.label}
               style={{
-                background: a.bg,
-                border: `1px solid ${isLifted ? "rgba(255,255,255,0.25)" : a.border}`,
+                background: "var(--card-bg)",
+                border: `1px solid ${isLifted ? "rgba(255,255,255,0.25)" : "var(--card-border)"}`,
                 borderRadius: "14px",
                 padding: "18px",
                 cursor: isLifted ? "grabbing" : "default",
@@ -214,10 +213,10 @@ export default function RadarSection() {
                 opacity: visible ? 1 : 0,
                 zIndex: isGrabbed ? 10 : 1,
                 boxShadow: isLifted
-                  ? `0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1), 0 0 30px ${a.glow}`
+                  ? "0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)"
                   : isDropping
-                  ? `0 4px 12px rgba(0,0,0,0.3)`
-                  : `0 2px 12px rgba(0,0,0,0.45), 0 8px 24px -8px ${a.glow}`,
+                  ? "0 4px 12px rgba(0,0,0,0.3)"
+                  : "none",
                 transition: isLifted
                   ? "transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s, border-color 0.3s"
                   : isDropping
@@ -227,8 +226,6 @@ export default function RadarSection() {
                   : `all 0.6s ${0.08 * (i + 4)}s cubic-bezier(0.22,1,0.36,1)`,
                 position: "relative",
               }}
-              onMouseEnter={(e) => { if (!grabbedCard) e.currentTarget.style.boxShadow = `0 10px 24px -12px ${a.glow}`; }}
-              onMouseLeave={(e) => { if (!grabbedCard) e.currentTarget.style.boxShadow = `0 4px 14px -10px ${a.glow}`; }}
             >
               {/* Grab handle dots — visible on grabbed card */}
               {isGrabbed && (
@@ -257,7 +254,7 @@ export default function RadarSection() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
 
           {/* Revenue MTD vs target */}
-          <div style={{ ...card, background: "linear-gradient(160deg, rgba(34,197,94,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(34,197,94,0.26)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(34,197,94,0.16)", position: "relative", overflow: "hidden", ...stagger(8) }}>
+          <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(8) }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
               <div>
                 <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Revenue MTD vs. target</div>
@@ -283,7 +280,7 @@ export default function RadarSection() {
           </div>
 
           {/* Aging receivables */}
-          <div style={{ ...card, background: "linear-gradient(160deg, rgba(239,68,68,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(239,68,68,0.26)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(239,68,68,0.16)", position: "relative", overflow: "hidden", ...stagger(9) }}>
+          <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(9) }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
               <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Aging receivables</span>
               <span style={{ fontSize: "12px", color: "var(--red)", fontWeight: 600 }}>$241,800</span>
@@ -313,7 +310,7 @@ export default function RadarSection() {
           </div>
 
           {/* Crews today */}
-          <div style={{ ...card, background: "linear-gradient(160deg, rgba(167,139,250,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(167,139,250,0.26)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(167,139,250,0.16)", position: "relative", overflow: "hidden", ...stagger(10) }}>
+          <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(10) }}>
             <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>Crews today</div>
             {CREWS.map((c, i) => (
               <div
@@ -341,7 +338,7 @@ export default function RadarSection() {
         </div>
 
         {/* Upcoming jobs — full width */}
-        <div style={{ ...card, marginTop: "16px", background: "linear-gradient(160deg, rgba(56,189,248,0.11) 0%, var(--surface2) 100%)", border: "1px solid rgba(56,189,248,0.26)", boxShadow: "0 2px 12px rgba(0,0,0,0.45), 0 8px 28px -8px rgba(56,189,248,0.16)", position: "relative", overflow: "hidden", ...stagger(11) }}>
+        <div style={{ ...card, marginTop: "16px", background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(11) }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
             <CalendarDays className="w-4 h-4 text-[#3F3F46]" />
             <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Next 24 hours</span>
@@ -351,16 +348,16 @@ export default function RadarSection() {
               <div
                 key={j.title}
                 style={{
-                  background: `linear-gradient(160deg, ${j.statusColor}15 0%, rgba(255,255,255,0.03) 70%)`,
-                  border: `1px solid ${j.statusColor}40`,
+                  background: "var(--card-bg)",
+                  border: "1px solid var(--card-border)",
                   borderRadius: "10px",
                   padding: "14px",
                   transition: "all 0.2s",
                   cursor: "default",
-                  boxShadow: `0 6px 16px -10px ${j.statusColor}40`,
+                  boxShadow: "none",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${j.statusColor}70`; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 24px -10px ${j.statusColor}60`; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${j.statusColor}40`; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `0 6px 16px -10px ${j.statusColor}40`; }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
               >
                 <div style={{ fontSize: "13px", color: "var(--ink)", fontWeight: 500, marginBottom: "6px", lineHeight: 1.3 }}>{j.title}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>

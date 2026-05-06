@@ -17,6 +17,8 @@ export interface GradientBlindsProps {
   distortAmount?: number;
   shineDirection?: "left" | "right";
   mixBlendMode?: string;
+  /** Render one frozen frame: no time animation, no mouse tracking. */
+  staticFrame?: boolean;
 }
 
 // Re-export the untyped JSX component with proper TypeScript interface
