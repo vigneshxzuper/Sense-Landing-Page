@@ -308,10 +308,6 @@ export default function AnalyzeSection() {
   const { deployedTopic, setDeployedTopic } = useDeployedTopic();
   const [actCompleted, setActCompleted] = useState<number[]>([]);
   const [actActive, setActActive] = useState(-1);
-  const handleDeploy = (variant: "performance" | "sla" | "revenue") => {
-    setDeployedTopic(variant);
-    setView("act");
-  };
   const VIEW_INDEX: Record<"ask" | "analyze" | "act", number> = { ask: 0, analyze: 1, act: 2 };
   // Smaller slide distance + opacity so we don't need overflow:hidden (which clipped the Mac shadow).
   const offsetFor = (own: "ask" | "analyze" | "act") => (VIEW_INDEX[own] - VIEW_INDEX[view]) * 28;
@@ -345,6 +341,17 @@ export default function AnalyzeSection() {
       return () => clearTimeout(t);
     }
   }, [aiDone]);
+
+  // Auto-deploy: once the chart has rendered for the picked prompt, slide
+  // straight to the Act view + suggested agent. No button click required.
+  useEffect(() => {
+    if (!showChart || !topic) return;
+    const t = setTimeout(() => {
+      setDeployedTopic(topic);
+      setView("act");
+    }, 2200);
+    return () => clearTimeout(t);
+  }, [showChart, topic, setDeployedTopic]);
 
   const hasTriggered = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -649,33 +656,6 @@ export default function AnalyzeSection() {
                         </span>
                       </div>
 
-                      {/* Action button */}
-                      <div style={{ display: "flex" }}>
-                        <button
-                          type="button"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            padding: "8px 16px",
-                            borderRadius: "999px",
-                            background: "linear-gradient(135deg, #E85D3A, #C4472A)",
-                            color: "#fff",
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            border: "none",
-                            cursor: "pointer",
-                            boxShadow: "0 6px 24px rgba(232,93,58,0.32), 0 2px 6px rgba(0,0,0,0.18)",
-                            transition: "transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s",
-                          }}
-                          onClick={() => handleDeploy("revenue")}
-                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-                        >
-                          <Sparkles style={{ width: 14, height: 14 }} />
-                          Deploy CSR Agent
-                        </button>
-                      </div>
                     </div>
                   )}
 
@@ -722,35 +702,6 @@ export default function AnalyzeSection() {
                         </span>
                       </div>
 
-                      {/* Action button */}
-                      <div style={{ display: "flex" }}>
-                        <button
-                          type="button"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            padding: "8px 16px",
-                            borderRadius: "999px",
-                            background: "linear-gradient(135deg, #E85D3A, #C4472A)",
-                            color: "#fff",
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            border: "none",
-                            cursor: "pointer",
-                            boxShadow: "0 6px 24px rgba(232,93,58,0.32), 0 2px 6px rgba(0,0,0,0.18)",
-                            transition: "transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s",
-                          }}
-                          onClick={() => handleDeploy("performance")}
-                          onMouseDown={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-                          onMouseUp={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-                        >
-                          <Sparkles style={{ width: 14, height: 14 }} />
-                          Deploy Collections Agent
-                        </button>
-                      </div>
                     </div>
                   )}
 
@@ -800,33 +751,6 @@ export default function AnalyzeSection() {
                         </span>
                       </div>
 
-                      {/* Action button */}
-                      <div style={{ display: "flex" }}>
-                        <button
-                          type="button"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            padding: "8px 16px",
-                            borderRadius: "999px",
-                            background: "linear-gradient(135deg, #E85D3A, #C4472A)",
-                            color: "#fff",
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            border: "none",
-                            cursor: "pointer",
-                            boxShadow: "0 6px 24px rgba(232,93,58,0.32), 0 2px 6px rgba(0,0,0,0.18)",
-                            transition: "transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.18s",
-                          }}
-                          onClick={() => handleDeploy("sla")}
-                          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-                        >
-                          <Sparkles style={{ width: 14, height: 14 }} />
-                          Deploy Sales Coach Agent
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>
