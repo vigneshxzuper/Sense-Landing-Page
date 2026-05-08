@@ -6,6 +6,7 @@ import type { ComponentType } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import type { GradientBlindsProps } from "../GradientBlinds";
 import { Sparkles, BookOpen } from "lucide-react";
+import TextScramble from "@/components/TextScramble";
 
 const GradientBlinds = dynamic<GradientBlindsProps>(
   () =>
@@ -15,13 +16,17 @@ const GradientBlinds = dynamic<GradientBlindsProps>(
   { ssr: false }
 );
 
-export default function HeroSectionStatic() {
+interface HeroSectionStaticProps {
+  /** When provided, parent controls the reveal (skip own IntersectionObserver). */
+  externalBooted?: boolean;
+}
+
+export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticProps = {}) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [mounted, setMounted] = useState(false);
-  // CRT "power-on" boot — fires once when the section first scrolls into
-  // view, picking up the visual baton from HeroScrollAnimation's monitor zoom.
-  const [booted, setBooted] = useState(false);
+  const [internalBooted, setInternalBooted] = useState(false);
+  const booted = externalBooted ?? internalBooted;
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -30,12 +35,13 @@ export default function HeroSectionStatic() {
   }, []);
 
   useEffect(() => {
+    if (externalBooted !== undefined) return; // parent-driven, skip own observer
     const el = sectionRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setBooted(true);
+          setInternalBooted(true);
           obs.disconnect();
         }
       },
@@ -43,7 +49,7 @@ export default function HeroSectionStatic() {
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [externalBooted]);
 
   return (
     <section
@@ -127,11 +133,18 @@ export default function HeroSectionStatic() {
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(24px)",
             transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.12s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.12s",
+            // Reserve a stable two-line block so the scramble never causes
+            // layout jump when characters cycle.
+            minHeight: "calc(2em * 1.05)",
           }}
         >
-          Command center for
-          <br />
-          <span style={{ whiteSpace: "nowrap" }}>your roofing operation.</span>
+          <TextScramble
+            text="Command center for your roofing operation."
+            active={booted}
+            duration={1180}
+            delay={120}
+            style={{ display: "inline-block" }}
+          />
         </h1>
 
         <p

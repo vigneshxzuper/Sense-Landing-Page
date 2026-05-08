@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Press_Start_2P } from "next/font/google";
+import { Inter, Press_Start_2P, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar";
@@ -20,6 +20,13 @@ const pressStart2P = Press_Start_2P({
   display: "swap",
 });
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Zuper Sense — AI Intelligence Layer for Field Service",
   description: "Zuper Sense turns your operational data into plain-English answers — and turns those answers into action.",
@@ -36,7 +43,7 @@ const themeScript = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${pressStart2P.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${pressStart2P.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

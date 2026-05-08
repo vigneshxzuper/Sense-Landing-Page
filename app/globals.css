@@ -138,6 +138,14 @@ a, button { cursor: pointer; }
 }
 .cursor-blink { animation: blink 1s step-end infinite; }
 
+/* Terminal-style block caret for the CRT typewriter line. step-end
+   makes the on/off snap rather than fade — sharp 1Hz blink. */
+.cli-caret {
+  display: inline-block;
+  margin-left: 0.15em;
+  animation: blink 1s step-end infinite;
+}
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -150,9 +158,10 @@ a, button { cursor: pointer; }
 }
 
 /* CRT glitch — RGB-split + brightness flicker. Hits twice in a 3s cycle:
-   a small mid-cycle blip and a larger end-of-cycle burst. Touches only
-   text-shadow, filter, and opacity so it doesn't fight GSAP transforms
-   on the host element. */
+   a small mid-cycle blip and a larger end-of-cycle burst.
+   Touches ONLY text-shadow + filter — never opacity — so GSAP's
+   timeline-driven opacity (used to fade this element out at the laptop
+   swap) is not overridden by the loop. */
 @keyframes crtGlitch {
   0%, 100% {
     text-shadow:
@@ -160,7 +169,6 @@ a, button { cursor: pointer; }
       0 0 24px rgba(255,90,30,0.45),
       0 0 48px rgba(255,90,30,0.25);
     filter: none;
-    opacity: 1;
   }
   /* Mid-cycle micro blip (~50% of cycle) */
   49.8% {
@@ -169,7 +177,6 @@ a, button { cursor: pointer; }
       0 0 24px rgba(255,90,30,0.45),
       0 0 48px rgba(255,90,30,0.25);
     filter: none;
-    opacity: 1;
   }
   50.2% {
     text-shadow:
@@ -178,7 +185,6 @@ a, button { cursor: pointer; }
       0 0 10px rgba(255,159,74,0.7),
       0 0 24px rgba(255,90,30,0.45);
     filter: brightness(1.25) contrast(1.15);
-    opacity: 0.92;
   }
   51% {
     text-shadow:
@@ -186,7 +192,6 @@ a, button { cursor: pointer; }
       0 0 24px rgba(255,90,30,0.45),
       0 0 48px rgba(255,90,30,0.25);
     filter: none;
-    opacity: 1;
   }
   /* End-of-cycle bigger burst (~93–98%) */
   93% {
@@ -195,7 +200,6 @@ a, button { cursor: pointer; }
       0 0 24px rgba(255,90,30,0.45),
       0 0 48px rgba(255,90,30,0.25);
     filter: none;
-    opacity: 1;
   }
   93.8% {
     text-shadow:
@@ -206,7 +210,6 @@ a, button { cursor: pointer; }
       0 0 10px rgba(255,159,74,0.7),
       0 0 24px rgba(255,90,30,0.45);
     filter: brightness(1.35) contrast(1.2) saturate(1.4);
-    opacity: 0.85;
   }
   94.6% {
     text-shadow:
@@ -215,7 +218,6 @@ a, button { cursor: pointer; }
       0 0 10px rgba(255,159,74,0.7),
       0 0 24px rgba(255,90,30,0.45);
     filter: brightness(0.7) contrast(1.4);
-    opacity: 0.65;
   }
   95.4% {
     text-shadow:
@@ -224,7 +226,6 @@ a, button { cursor: pointer; }
       0 0 10px rgba(255,159,74,0.7),
       0 0 24px rgba(255,90,30,0.45);
     filter: brightness(1.2);
-    opacity: 1;
   }
   96.2% {
     text-shadow:
@@ -232,7 +233,6 @@ a, button { cursor: pointer; }
       0 0 24px rgba(255,90,30,0.45),
       0 0 48px rgba(255,90,30,0.25);
     filter: brightness(0.92);
-    opacity: 1;
   }
   97% {
     text-shadow:
@@ -240,98 +240,28 @@ a, button { cursor: pointer; }
       0 0 24px rgba(255,90,30,0.45),
       0 0 48px rgba(255,90,30,0.25);
     filter: none;
-    opacity: 1;
   }
 }
 .crt-glitch { animation: crtGlitch 3s infinite; }
 
-/* "Portal" flash for HeroSectionStatic. Fires once when the section
-   enters viewport via IntersectionObserver toggling `.booted`. Three
-   staggered layers compose the effect:
-     • crt-boot-flash    — radial light burst (warm white→orange) that
-                           expands from center; the "you're crossing
-                           the threshold" moment
-     • crt-boot-scanline — horizontal beam, snaps wide then collapses
-                           (CRT signal cue, anchors the warm flash)
-     • crt-boot-inner    — content reveal: starts dark + blurred, snaps
-                           into focus at peak brightness, then settles
-   Total duration ≈ 840ms. Easings: cubic-bezier(0.22, 1, 0.36, 1)
-   (easeOutQuint) on the perceptual leads, never `ease` / `ease-in-out`.
-   Stagger: scanline @0ms, content @0ms, flash @60ms — the flash arrives
-   one beat after the scanline strikes, selling sequence not simultaneity. */
-
-.crt-boot-flash {
-  position: absolute;
-  inset: 0;
-  z-index: 25;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(
-    ellipse 78% 68% at center,
-    rgba(255, 255, 255, 1) 0%,
-    rgba(255, 220, 180, 0.88) 18%,
-    rgba(255, 140, 80, 0.55) 40%,
-    rgba(232, 93, 58, 0.20) 65%,
-    rgba(0, 0, 0, 0) 85%
-  );
-  mix-blend-mode: screen;
-  will-change: transform, opacity;
-}
-.crt-boot.booted .crt-boot-flash {
-  animation: crtBootFlash 840ms cubic-bezier(0.22, 1, 0.36, 1) 60ms forwards;
-}
-
+/* HeroSectionStatic enters with a simple, slow fade-up from black so
+   the handoff from the previous section's zoom-into-black reads as a
+   single continuous dissolve, not a hard cut or a busy "boot" flash.
+   IntersectionObserver toggles .booted on the section; CSS fades the
+   inner content from opacity 0 to 1 over a calm 720ms.
+   The flash + scanline overlays are kept in the JSX but rendered with
+   no animation now (they're invisible at rest), so the existing markup
+   doesn't need to change. */
+.crt-boot-flash,
 .crt-boot-scanline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 2px;
-  z-index: 26;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 1) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  box-shadow:
-    0 0 28px rgba(255, 255, 255, 0.95),
-    0 0 72px rgba(255, 200, 140, 0.7);
-  transform: scaleX(0);
-  opacity: 0;
-  will-change: transform, opacity;
-}
-.crt-boot.booted .crt-boot-scanline {
-  animation: crtBootScanline 720ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  display: none;
 }
 
 .crt-boot-inner {
-  filter: none;
-  will-change: filter, transform;
+  opacity: 0;
+  transition: opacity 720ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
 }
 .crt-boot.booted .crt-boot-inner {
-  animation: crtBootPunch 840ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes crtBootFlash {
-  0%   { opacity: 0;    transform: scale(0.42); }
-  12%  { opacity: 1;    transform: scale(1.05); }
-  34%  { opacity: 0.68; transform: scale(1.32); }
-  68%  { opacity: 0.18; transform: scale(1.55); }
-  100% { opacity: 0;    transform: scale(1.7); }
-}
-@keyframes crtBootScanline {
-  0%   { transform: scaleX(0);    opacity: 0; }
-  9%   { transform: scaleX(1.04); opacity: 1; }
-  18%  { transform: scaleX(1);    opacity: 1; }
-  60%  { transform: scaleX(1);    opacity: 0.5; }
-  100% { transform: scaleX(0.45); opacity: 0; }
-}
-@keyframes crtBootPunch {
-  0%   { filter: brightness(0.18) blur(6px); transform: scale(1.035); }
-  14%  { filter: brightness(2.4)  blur(0);   transform: scale(1.0); }
-  32%  { filter: brightness(1.25);           transform: scale(1.0); }
-  62%  { filter: brightness(1.06);                                     }
-  100% { filter: none;                       transform: scale(1.0); }
+  opacity: 1;
 }
