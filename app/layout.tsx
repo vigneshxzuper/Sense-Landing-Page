@@ -4,7 +4,6 @@ import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar";
 import SmoothScroll from "@/components/SmoothScroll";
-import ScrollProgress from "@/components/ScrollProgress";
 import ScrollReset from "@/components/ScrollReset";
 
 const inter = Inter({
@@ -51,7 +50,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <ScrollReset />
           <SmoothScroll />
-          <ScrollProgress />
           <Navbar />
           {children}
         </ThemeProvider>

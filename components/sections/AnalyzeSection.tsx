@@ -2,8 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import { SenseChat } from "@/components/ui/sense-chat";
 import ScrollFloat from "@/components/ScrollFloat";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
 import { Sparkles, CheckCircle2, Loader2, Phone, Mail, MessageSquare, Zap } from "lucide-react";
 import { useDeployedTopic, type DeployTopic } from "@/components/TopicContext";
 import {
@@ -51,7 +58,8 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
           willChange: "transform, opacity",
         }}
       >
-      {/* Glass fill matching window frame */}
+      {/* Glass fill matching window frame — bottom fades to nothing so
+          the 3-sided frame doesn't read as a clipped rectangle. */}
       <div
         style={{
           position: "absolute",
@@ -64,10 +72,16 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
             "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.025) 50%, rgba(255,255,255,0.015) 100%)",
           backdropFilter: "blur(22px) saturate(160%)",
           WebkitBackdropFilter: "blur(22px) saturate(160%)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.15)",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderLeft: "1px solid rgba(255,255,255,0.06)",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "none",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
           pointerEvents: "none",
+          maskImage:
+            "linear-gradient(180deg, #000 0%, #000 55%, rgba(0,0,0,0.55) 85%, rgba(0,0,0,0) 100%)",
+          WebkitMaskImage:
+            "linear-gradient(180deg, #000 0%, #000 55%, rgba(0,0,0,0.55) 85%, rgba(0,0,0,0) 100%)",
         }}
       />
       <svg
@@ -80,9 +94,9 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
           filter:
             "drop-shadow(0 0 0.5px rgba(255,255,255,0.6)) drop-shadow(0 0 6px rgba(255,255,255,0.28)) drop-shadow(0 0 18px rgba(255,255,255,0.16)) drop-shadow(0 0 40px rgba(255,255,255,0.08))",
           maskImage:
-            "radial-gradient(ellipse 95% 95% at center, #000 75%, rgba(0,0,0,0.35) 100%)",
+            "linear-gradient(180deg, #000 0%, #000 55%, rgba(0,0,0,0.55) 85%, rgba(0,0,0,0) 100%)",
           WebkitMaskImage:
-            "radial-gradient(ellipse 95% 95% at center, #000 75%, rgba(0,0,0,0.35) 100%)",
+            "linear-gradient(180deg, #000 0%, #000 55%, rgba(0,0,0,0.55) 85%, rgba(0,0,0,0) 100%)",
         }}
       >
         <g
@@ -92,8 +106,10 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          {/* Window frame */}
-          <rect x="20" y="40" width="1560" height="1040" rx="22" />
+          {/* Window frame — open at the bottom (3 sides only). Top + L/R
+              edges drop straight down; the mask gradient fades them out
+              before they would meet a bottom edge. */}
+          <path d="M 20 1080 L 20 62 A 22 22 0 0 1 42 40 L 1558 40 A 22 22 0 0 1 1580 62 L 1580 1080" />
           {/* Title bar divider */}
           <line x1="20" y1="110" x2="1580" y2="110" />
         </g>
@@ -308,17 +324,54 @@ export default function AnalyzeSection() {
   const { deployedTopic, setDeployedTopic } = useDeployedTopic();
   const [actCompleted, setActCompleted] = useState<number[]>([]);
   const [actActive, setActActive] = useState(-1);
+  // Radar add-to-radar CTA — appears once Casey's stepper hits the final
+  // "Logging responses back to the job" beat. Click flips it to a green
+  // "Added to radar" confirmation that fades out after a short hold.
+  const [radarAdded, setRadarAdded] = useState(false);
+  const [radarHidden, setRadarHidden] = useState(false);
+  // Auto-click choreography:
+  //   hidden  → no cursor yet (waiting for steps to finish)
+  //   moving  → cursor flies in from bottom-left toward the button
+  //   pressed → cursor sits on the button with a quick press squish
+  //   done    → cursor faded; button has flipped to confirmation
+  const [cursorPhase, setCursorPhase] = useState<"hidden" | "moving" | "pressed" | "done">("hidden");
   const VIEW_INDEX: Record<"ask" | "analyze" | "act", number> = { ask: 0, analyze: 1, act: 2 };
   // Smaller slide distance + opacity so we don't need overflow:hidden (which clipped the Mac shadow).
   const offsetFor = (own: "ask" | "analyze" | "act") => (VIEW_INDEX[own] - VIEW_INDEX[view]) * 28;
   const isActive = (own: "ask" | "analyze" | "act") => own === view;
   const slideTransition = "transform 760ms cubic-bezier(0.65, 0, 0.35, 1), opacity 600ms cubic-bezier(0.65, 0, 0.35, 1)";
 
+  // Auto-click choreography. Triggers when all stepper items have
+  // completed: cursor flies in (560ms), presses (180ms), then the button
+  // flips to the green confirmation and the cursor fades out.
+  useEffect(() => {
+    if (view !== "act") return;
+    const total = ACT_VARIANTS[deployedTopic].steps.length;
+    if (actCompleted.length !== total) return;
+    if (cursorPhase !== "hidden") return;
+    const t1 = setTimeout(() => setCursorPhase("moving"), 380);
+    const t2 = setTimeout(() => setCursorPhase("pressed"), 380 + 620);
+    const t3 = setTimeout(() => {
+      setRadarAdded(true);
+      setCursorPhase("done");
+    }, 380 + 620 + 180);
+    const t4 = setTimeout(() => setRadarHidden(true), 380 + 620 + 180 + 1600);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
+  }, [actCompleted, view, deployedTopic, cursorPhase]);
+
   // Run the Act stepper sequence whenever view enters "act".
   useEffect(() => {
     if (view !== "act") return;
     setActCompleted([]);
     setActActive(-1);
+    setRadarAdded(false);
+    setRadarHidden(false);
+    setCursorPhase("hidden");
     const variant = ACT_VARIANTS[deployedTopic];
     const timers: ReturnType<typeof setTimeout>[] = [];
     variant.steps.forEach((_, i) => {
@@ -356,6 +409,27 @@ export default function AnalyzeSection() {
   const hasTriggered = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
   const askRef = useRef<HTMLDivElement>(null);
+
+  // Pin the Ask block through Ask → Analyze → Act. 130% is enough to
+  // cover the arming + typing + analyze→act sequence without leaving
+  // dead scroll after the Act animations land. The moment the user
+  // scrolls past the pin, RadarSection's target slot enters view and
+  // the live-activity card immediately takes flight into the dashboard.
+  useGSAP(() => {
+    if (!askRef.current) return;
+    const trigger = ScrollTrigger.create({
+      trigger: askRef.current,
+      start: "top top",
+      end: "+=80%",
+      pin: true,
+      pinSpacing: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+    });
+    return () => {
+      trigger.kill();
+    };
+  }, { scope: sectionRef });
   const [askProgress, setAskProgress] = useState(0);
   const [backdropRevealed, setBackdropRevealed] = useState(false);
 
@@ -426,8 +500,122 @@ export default function AnalyzeSection() {
       ref={sectionRef}
       style={{ background: "var(--bg)", padding: "0 24px", position: "relative" }}
     >
-      {/* Ask — centered header + chat. View state swaps Ask / Analyze / Act inside the Mac window. */}
-      <div ref={askRef} style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "160px 0", position: "relative" }}>
+      {/* Automatic stepper — outside the Mac window, sticky to the
+          viewport so it stays visible across the entire Ask → Analyze
+          → Act journey. Driven purely by scroll-derived `view` state;
+          no clicks or buttons. */}
+      <div
+        aria-hidden
+        style={{
+          position: "sticky",
+          top: "32px",
+          zIndex: 5,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: "32px",
+          marginBottom: "-32px",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "22px",
+            padding: "16px 34px",
+            borderRadius: "100px",
+            background: "rgba(10, 10, 12, 0.7)",
+            backdropFilter: "blur(24px) saturate(160%)",
+            WebkitBackdropFilter: "blur(24px) saturate(160%)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: [
+              "0 18px 48px -16px rgba(0,0,0,0.6)",
+              "inset 0 1px 0 rgba(255,255,255,0.06)",
+            ].join(", "),
+          }}
+        >
+          {(["ask", "analyze", "act"] as const).map((step, i, arr) => {
+            const currentIdx = arr.indexOf(view);
+            const isActive = view === step;
+            const isPast = currentIdx > i;
+            const isDone = isActive || isPast;
+            return (
+              <span key={step} style={{ display: "flex", alignItems: "center", gap: "22px" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "11px" }}>
+                  <span
+                    style={{
+                      position: "relative",
+                      width: "12px",
+                      height: "12px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {isActive && (
+                      <span
+                        aria-hidden
+                        style={{
+                          position: "absolute",
+                          inset: "-6px",
+                          borderRadius: "50%",
+                          background: "rgba(232,93,58,0.28)",
+                          filter: "blur(4px)",
+                          animation: "stepper-pulse 1.6s ease-in-out infinite",
+                        }}
+                      />
+                    )}
+                    <span
+                      style={{
+                        position: "relative",
+                        width: isActive ? "12px" : "10px",
+                        height: isActive ? "12px" : "10px",
+                        borderRadius: "50%",
+                        background: isDone ? "#E85D3A" : "rgba(255,255,255,0.18)",
+                        boxShadow: isActive
+                          ? "0 0 0 3px rgba(232,93,58,0.18), 0 0 14px rgba(232,93,58,0.55)"
+                          : isPast
+                            ? "0 0 0 2px rgba(232,93,58,0.12)"
+                            : "none",
+                        transition:
+                          "background 360ms cubic-bezier(0.22,1,0.36,1), width 360ms cubic-bezier(0.22,1,0.36,1), height 360ms cubic-bezier(0.22,1,0.36,1), box-shadow 360ms cubic-bezier(0.22,1,0.36,1)",
+                      }}
+                    />
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: isActive ? 650 : 500,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      color: isActive ? "#FFFFFF" : isPast ? "var(--ink2)" : "var(--ink3)",
+                      transition: "color 360ms cubic-bezier(0.22,1,0.36,1), font-weight 360ms cubic-bezier(0.22,1,0.36,1)",
+                    }}
+                  >
+                    {step}
+                  </span>
+                </span>
+                {i < arr.length - 1 && (
+                  <span
+                    style={{
+                      width: "48px",
+                      height: "2px",
+                      borderRadius: "1px",
+                      background: isPast ? "#E85D3A" : "rgba(255,255,255,0.12)",
+                      boxShadow: isPast ? "0 0 8px rgba(232,93,58,0.35)" : "none",
+                      transition: "background 360ms cubic-bezier(0.22,1,0.36,1), box-shadow 360ms cubic-bezier(0.22,1,0.36,1)",
+                    }}
+                  />
+                )}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Ask — centered chat. View state swaps Ask / Analyze / Act inside the Mac window. */}
+      <div ref={askRef} style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0", position: "relative" }}>
         <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={parallaxOffset} />
         <div
           style={{
@@ -442,27 +630,17 @@ export default function AnalyzeSection() {
                 ? `translateY(calc(${(1 - Math.min(1, askProgress / 0.3)) * 24}px))`
                 : `translateY(${offsetFor("ask")}%)`,
             opacity: view === "ask" ? Math.min(1, askProgress / 0.25) : 0,
-            pointerEvents: view === "ask" ? "auto" : "none",
+            pointerEvents: "none",
             transition:
               view === "ask" && askProgress < 1
                 ? "none"
                 : slideTransition,
           }}
         >
-          <div style={{ marginBottom: "40px" }}>
-            <ScrollFloat as="h2" style={{ fontSize: "clamp(40px, 6vw, 72px)", fontWeight: 700, letterSpacing: "-0.045em", lineHeight: 1.05, color: "var(--ink)", marginBottom: "14px" }}>
-              Ask.
-            </ScrollFloat>
-            <p style={{ fontSize: "clamp(15px, 1.6vw, 17px)", color: "var(--ink2)", lineHeight: 1.5, maxWidth: "480px", margin: "0 auto", fontWeight: 400 }}>
-              Pick a prompt below or type your own.
-            </p>
-          </div>
-
           <div>
             <SenseChat />
           </div>
         </div>
-      </div>
 
       {/* Analyze — chat + chart, overlays the Mac window when view === "analyze" */}
       <div
@@ -482,14 +660,6 @@ export default function AnalyzeSection() {
       >
         <div style={{ width: "min(1240px, 94vw)", height: "min(868px, 65.8vw)", maxHeight: "88vh", position: "relative" }}>
         <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
-        <h2 style={{ fontSize: "clamp(22px, 2.6vw, 30px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.25, color: "var(--ink)", marginBottom: "4px", marginTop: 0 }}>
-          Analyze.
-        </h2>
-        <p style={{ fontSize: "12px", color: "var(--ink2)", lineHeight: 1.5, margin: "0 0 10px 0", fontWeight: 400 }}>
-          See how Sense breaks down the answer.
-        </p>
-
-
         {/* Chat conversation */}
         {topic && (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
@@ -785,14 +955,10 @@ export default function AnalyzeSection() {
         }}
       >
         <div style={{ width: "min(1240px, 94vw)", height: "min(868px, 65.8vw)", maxHeight: "88vh", position: "relative" }}>
-        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
-          <h2 style={{ fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.25, color: "var(--ink)", marginBottom: "6px", marginTop: 0 }}>
-            Act.
-          </h2>
-          <p style={{ fontSize: "clamp(13px, 1.3vw, 14px)", color: "var(--ink2)", lineHeight: 1.5, maxWidth: "560px", margin: "0 0 18px 0", fontWeight: 400 }}>
-            {ACT_VARIANTS[deployedTopic].agent.tagline}
-          </p>
-
+        {/* overflow: visible so the live activity card can transform
+            out of the mac frame on its way to the radar section without
+            being clipped at the frame edge. */}
+        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "visible", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             {/* Agent + steps */}
             <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none" }}>
@@ -852,8 +1018,11 @@ export default function AnalyzeSection() {
               })}
             </div>
 
-            {/* Activity feed */}
-            <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none" }}>
+            {/* Activity feed — shared element. Marked with id so the
+                RadarSection's scroll-driven transform can move THIS card
+                (the only one) into a placeholder slot in the next
+                section as the user scrolls. */}
+            <div id="live-activity-source" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none", willChange: "transform", transformOrigin: "0 0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                 <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px #22C55E" }} />
                 <span style={{ fontSize: "10px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{ACT_VARIANTS[deployedTopic].agent.name} · Live activity</span>
@@ -867,6 +1036,161 @@ export default function AnalyzeSection() {
                   <div style={{ fontSize: "10px", color: "var(--ink3)", whiteSpace: "nowrap", marginTop: "2px" }}>{entry.time}</div>
                 </div>
               ))}
+
+              {/* Add to Radar CTA — appears once Casey's final step
+                  ("Logging responses back to the job") lands. A cursor
+                  flies in and auto-clicks; the button then flips to a
+                  green confirmation that fades after a short hold. */}
+              {(() => {
+                const totalSteps = ACT_VARIANTS[deployedTopic].steps.length;
+                const allDone = actCompleted.length === totalSteps;
+                if (!allDone || radarHidden) return null;
+                const cursorVisible = cursorPhase === "moving" || cursorPhase === "pressed";
+                return (
+                  <div
+                    style={{
+                      position: "relative",
+                      marginTop: "14px",
+                      paddingTop: "12px",
+                      borderTop: "1px solid rgba(255,255,255,0.05)",
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      transition: "opacity 600ms cubic-bezier(0.22,1,0.36,1)",
+                    }}
+                  >
+                    {!radarAdded ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRadarAdded(true);
+                          setCursorPhase("done");
+                          setTimeout(() => setRadarHidden(true), 1800);
+                        }}
+                        style={{
+                          position: "relative",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "9px 18px 9px 14px",
+                          borderRadius: "999px",
+                          background:
+                            "linear-gradient(180deg, rgba(232,93,58,0.22) 0%, rgba(232,93,58,0.12) 100%)",
+                          border: "1px solid rgba(232,93,58,0.45)",
+                          color: "#FFD7C5",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          letterSpacing: "0.01em",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          boxShadow: [
+                            "0 6px 18px -8px rgba(232,93,58,0.55)",
+                            "inset 0 1px 0 rgba(255,255,255,0.18)",
+                            "inset 0 -1px 0 rgba(0,0,0,0.25)",
+                          ].join(", "),
+                          transform:
+                            cursorPhase === "pressed" ? "scale(0.96)" : "scale(1)",
+                          transition:
+                            "transform 180ms cubic-bezier(0.22,1,0.36,1), background 220ms, border-color 220ms, box-shadow 220ms, color 220ms",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "18px",
+                            height: "18px",
+                            borderRadius: "50%",
+                            background:
+                              "linear-gradient(180deg, #FF8B65 0%, #E85D3A 100%)",
+                            boxShadow:
+                              "0 0 0 1px rgba(232,93,58,0.6), 0 0 12px rgba(232,93,58,0.55)",
+                          }}
+                        >
+                          <Zap
+                            className="w-3 h-3"
+                            style={{ color: "#fff", fill: "#fff" }}
+                          />
+                        </span>
+                        Add to Radar
+                      </button>
+                    ) : (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "9px 4px",
+                          color: "#22C55E",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          letterSpacing: "0.01em",
+                          opacity: radarHidden ? 0 : 1,
+                          transform: radarHidden ? "translateY(-2px)" : "translateY(0)",
+                          transition:
+                            "opacity 700ms cubic-bezier(0.22,1,0.36,1), transform 700ms cubic-bezier(0.22,1,0.36,1)",
+                        }}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Added to radar
+                      </span>
+                    )}
+
+                    {/* Auto-click cursor — anchored at the button's
+                        right edge (right: 28px, top: 18px). Hidden state
+                        offsets it down-right via transform so the entry
+                        animates transform + opacity ONLY (no layout
+                        thrash). Press state shrinks the cursor a touch. */}
+                    <span
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        right: "28px",
+                        top: "18px",
+                        pointerEvents: "none",
+                        opacity: cursorVisible ? 1 : 0,
+                        transform:
+                          cursorPhase === "hidden"
+                            ? "translate(60px, 56px) scale(0.9)"
+                            : cursorPhase === "pressed"
+                              ? "translate(0, 0) scale(0.88)"
+                              : "translate(0, 0) scale(1)",
+                        transition:
+                          "transform 540ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                        filter:
+                          "drop-shadow(0 4px 10px rgba(0,0,0,0.55)) drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
+                        willChange: "transform, opacity",
+                      }}
+                    >
+                      <svg width="22" height="24" viewBox="0 0 22 24" fill="none">
+                        <path
+                          d="M3 2.2 L3 19.3 L7.6 15.2 L10.2 21.2 L12.6 20.1 L10 14 L16.4 14 Z"
+                          fill="#fff"
+                          stroke="#0a0a0a"
+                          strokeWidth="1.4"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      {/* Click ripple at press moment */}
+                      {cursorPhase === "pressed" && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: "-6px",
+                            top: "-2px",
+                            width: "26px",
+                            height: "26px",
+                            borderRadius: "50%",
+                            border: "1.5px solid rgba(255,255,255,0.85)",
+                            animation: "radar-click-ring 340ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
+                            pointerEvents: "none",
+                          }}
+                        />
+                      )}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -886,6 +1210,7 @@ export default function AnalyzeSection() {
           </div>
         </div>
         </div>
+      </div>
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

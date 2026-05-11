@@ -100,6 +100,11 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  /* Let Lenis own scroll smoothing. Native scroll-behavior would fight it. */
+  scroll-behavior: auto;
+}
+
 html, body {
   background: var(--bg);
   color: var(--ink);
@@ -108,6 +113,21 @@ html, body {
   font-family: 'Inter', system-ui, sans-serif;
   overscroll-behavior: none;
   transition: background-color 1s cubic-bezier(0.4, 0, 0.2, 1), color 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduced-motion: collapse scroll-scrubbed transforms, pause loops. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .crt-glitch,
+  .cli-caret,
+  .cursor-blink { animation: none !important; }
 }
 
 /* Soft theme cross-fade — only active during a theme switch */
@@ -243,6 +263,31 @@ a, button { cursor: pointer; }
   }
 }
 .crt-glitch { animation: crtGlitch 3s infinite; }
+
+/* Ambient pulse for the active stepper dot — ambient loop, NOT
+   scroll-driven. Idles at the same beat regardless of input. */
+@keyframes stepperPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(232, 93, 58, 0.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(232, 93, 58, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(232, 93, 58, 0); }
+}
+.stepper-dot-active {
+  animation: stepperPulse 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* Soft halo loop behind the active stepper dot — gives the dot a
+   prominent "alive" feel beyond the static ring. */
+@keyframes stepper-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.45; }
+  50%      { transform: scale(1.25); opacity: 0.9; }
+}
+
+/* Auto-click cursor ripple — single-shot expanding ring at the moment
+   the cursor presses the Add-to-Radar button. */
+@keyframes radar-click-ring {
+  0%   { transform: scale(0.3); opacity: 0.85; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
 
 /* HeroSectionStatic enters with a simple, slow fade-up from black so
    the handoff from the previous section's zoom-into-black reads as a

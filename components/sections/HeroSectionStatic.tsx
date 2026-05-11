@@ -6,7 +6,6 @@ import type { ComponentType } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import type { GradientBlindsProps } from "../GradientBlinds";
 import { Sparkles, BookOpen } from "lucide-react";
-import TextScramble from "@/components/TextScramble";
 
 const GradientBlinds = dynamic<GradientBlindsProps>(
   () =>
@@ -19,20 +18,29 @@ const GradientBlinds = dynamic<GradientBlindsProps>(
 interface HeroSectionStaticProps {
   /** When provided, parent controls the reveal (skip own IntersectionObserver). */
   externalBooted?: boolean;
+  /** Hide the badge/h1/p/CTA block — chrome only. Used by HeroScrollAnimation
+   * so the in-laptop preview can act as the live content while this section
+   * fades in only the blinds + mac peek + bg around it. */
+  hideContent?: boolean;
 }
 
-export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticProps = {}) {
+export default function HeroSectionStatic({ externalBooted, hideContent = false }: HeroSectionStaticProps = {}) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const [mounted, setMounted] = useState(false);
+  // When mounted as a child of HeroScrollAnimation, the parent's GSAP
+  // timeline drives the dissolve, so the per-element fade-up would cause
+  // a second visible shift on top of the timeline crossfade. Skip it
+  // when externalBooted is provided.
+  const [mounted, setMounted] = useState(externalBooted !== undefined);
   const [internalBooted, setInternalBooted] = useState(false);
   const booted = externalBooted ?? internalBooted;
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    if (externalBooted !== undefined) return;
     const t = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(t);
-  }, []);
+  }, [externalBooted]);
 
   useEffect(() => {
     if (externalBooted !== undefined) return; // parent-driven, skip own observer
@@ -57,7 +65,7 @@ export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticP
       className={booted ? "crt-boot booted" : "crt-boot"}
       style={{
         position: "relative",
-        minHeight: "112vh",
+        minHeight: "100vh",
         background: "var(--bg)",
         overflow: "hidden",
         display: "flex",
@@ -70,7 +78,115 @@ export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticP
       {/* CRT power-on flash + scanline */}
       <div aria-hidden className="crt-boot-flash" />
       <div aria-hidden className="crt-boot-scanline" />
-      <div className="crt-boot-inner" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {/* Mac window peek + Ask copy — fills the empty space below the
+          CTAs and tees up the AnalyzeSection that follows. Decorative
+          only; the live chat lives in AnalyzeSection. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: "-44vh",
+          transform: "translateX(-50%)",
+          width: "min(1240px, 94vw)",
+          pointerEvents: "none",
+          zIndex: 1,
+          opacity: mounted ? 1 : 0,
+          transition: "opacity 0.9s cubic-bezier(0.22,1,0.36,1) 0.5s",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: "9% 1.25% 0",
+            borderRadius: "22px",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.025) 50%, rgba(255,255,255,0.015) 100%)",
+            backdropFilter: "blur(22px) saturate(160%)",
+            WebkitBackdropFilter: "blur(22px) saturate(160%)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.15)",
+          }}
+        />
+        <svg
+          viewBox="0 0 1600 1120"
+          preserveAspectRatio="xMidYMid meet"
+          style={{
+            width: "100%",
+            height: "auto",
+            display: "block",
+            filter:
+              "drop-shadow(0 0 0.5px rgba(255,255,255,0.6)) drop-shadow(0 0 6px rgba(255,255,255,0.28)) drop-shadow(0 0 18px rgba(255,255,255,0.16)) drop-shadow(0 0 40px rgba(255,255,255,0.08))",
+            maskImage:
+              "radial-gradient(ellipse 95% 95% at center, #000 75%, rgba(0,0,0,0.35) 100%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 95% 95% at center, #000 75%, rgba(0,0,0,0.35) 100%)",
+          }}
+        >
+          <g
+            fill="none"
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="20" y="40" width="1560" height="1040" rx="22" />
+            <line x1="20" y1="110" x2="1580" y2="110" />
+          </g>
+          <g>
+            <circle cx="58" cy="75" r="8" fill="#FF5F56" />
+            <circle cx="86" cy="75" r="8" fill="#FFBD2E" />
+            <circle cx="114" cy="75" r="8" fill="#27C93F" />
+          </g>
+          <rect
+            x="640"
+            y="60"
+            width="320"
+            height="28"
+            rx="14"
+            fill="none"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="1.8"
+          />
+          {/* Ask. headline */}
+          <text
+            x="800"
+            y="320"
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.95)"
+            fontSize="84"
+            fontWeight="700"
+            fontFamily="Inter, system-ui, sans-serif"
+            letterSpacing="-3"
+          >
+            Ask.
+          </text>
+          <text
+            x="800"
+            y="370"
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.55)"
+            fontSize="20"
+            fontFamily="Inter, system-ui, sans-serif"
+          >
+            Pick a prompt below or type your own.
+          </text>
+          {/* Prompt input outline */}
+          <rect
+            x="200"
+            y="430"
+            width="1200"
+            height="160"
+            rx="20"
+            fill="none"
+            stroke="rgba(232,93,58,0.55)"
+            strokeWidth="2"
+          />
+        </svg>
+      </div>
+
+      <div className="crt-boot-inner" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", paddingBottom: "42vh" }}>
       {/* Blinds backdrop in dark mode */}
       {isDark && (
         <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
@@ -92,7 +208,7 @@ export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticP
         </div>
       )}
 
-      <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "880px" }}>
+      <div style={{ position: "relative", zIndex: 2, display: hideContent ? "none" : "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "880px" }}>
         <div
           style={{
             display: "inline-flex",
@@ -110,8 +226,8 @@ export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticP
             WebkitBackdropFilter: "blur(18px) saturate(140%)",
             border: isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.08)",
             opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(16px)",
-            transition: "opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1), color 0.5s",
+            transform: mounted ? "translateY(0)" : "translateY(8px)",
+            transition: "opacity 1.1s cubic-bezier(0.22,1,0.36,1), transform 1.1s cubic-bezier(0.22,1,0.36,1), color 0.5s",
           }}
         >
           Zuper Sense &middot; Intelligence Layer
@@ -131,20 +247,14 @@ export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticP
             fontFeatureSettings: '"ss01", "cv11"',
             textShadow: "0 1px 8px rgba(0,0,0,0.22)",
             opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(24px)",
-            transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.12s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.12s",
+            transform: mounted ? "translateY(0)" : "translateY(14px)",
+            transition: "opacity 1.6s cubic-bezier(0.22,1,0.36,1) 0.08s, transform 1.6s cubic-bezier(0.22,1,0.36,1) 0.08s",
             // Reserve a stable two-line block so the scramble never causes
             // layout jump when characters cycle.
             minHeight: "calc(2em * 1.05)",
           }}
         >
-          <TextScramble
-            text="Command center for your roofing operation."
-            active={booted}
-            duration={1180}
-            delay={120}
-            style={{ display: "inline-block" }}
-          />
+          Command center for your roofing operation.
         </h1>
 
         <p
@@ -157,8 +267,8 @@ export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticP
             fontWeight: 450,
             margin: 0,
             opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(20px)",
-            transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.24s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.24s",
+            transform: mounted ? "translateY(0)" : "translateY(10px)",
+            transition: "opacity 1.3s cubic-bezier(0.22,1,0.36,1) 0.22s, transform 1.3s cubic-bezier(0.22,1,0.36,1) 0.22s",
           }}
         >
           Type a question, get an answer, deploy an agent.
@@ -171,8 +281,8 @@ export default function HeroSectionStatic({ externalBooted }: HeroSectionStaticP
             gap: "16px",
             marginTop: "40px",
             opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(20px)",
-            transition: "opacity 0.8s cubic-bezier(0.22,1,0.36,1) 0.38s, transform 0.8s cubic-bezier(0.22,1,0.36,1) 0.38s",
+            transform: mounted ? "translateY(0)" : "translateY(10px)",
+            transition: "opacity 1.3s cubic-bezier(0.22,1,0.36,1) 0.36s, transform 1.3s cubic-bezier(0.22,1,0.36,1) 0.36s",
           }}
         >
           {[

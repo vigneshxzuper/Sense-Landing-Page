@@ -36,7 +36,8 @@ function useAutoResizeTextarea({
   return { textareaRef, adjustHeight };
 }
 
-const TYPED_TEXT = "Show me my overdue invoices";
+const TYPED_TEXT = "Aging supplements by carrier";
+const TYPED_AUTO_TOPIC = "performance" as const;
 
 const CHIPS = [
   { label: "Aging supplements by carrier", topic: "performance" },
@@ -49,10 +50,38 @@ export type AnalyzeTopic = "performance" | "sla" | "revenue" | null;
 export function SenseChat() {
   const [value, setValue] = useState("");
   const [typedIndex, setTypedIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingArmed, setTypingArmed] = useState(false);
+  const [autoAdvanced, setAutoAdvanced] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({ minHeight: 80, maxHeight: 200 });
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // Arm typing only after the chat actually enters the viewport, then
+  // hold for 2 s before the first keystroke so the user has a moment
+  // to land on the section before the prompt animates in.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typingArmed) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTypingArmed(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [typingArmed]);
+
+  useEffect(() => {
+    if (!typingArmed) return;
+    const t = setTimeout(() => setIsTyping(true), 2000);
+    return () => clearTimeout(t);
+  }, [typingArmed]);
 
   useEffect(() => {
     if (!isTyping || typedIndex >= TYPED_TEXT.length) {
@@ -67,6 +96,20 @@ export function SenseChat() {
     return () => clearTimeout(t);
   }, [typedIndex, isTyping]);
 
+  // Once typing finishes, hold for a beat so the user can read the
+  // line, then auto-advance the section as if the matching chip had
+  // been clicked — same event AnalyzeSection already listens for.
+  useEffect(() => {
+    if (autoAdvanced || isTyping || typedIndex < TYPED_TEXT.length) return;
+    const t = setTimeout(() => {
+      setAutoAdvanced(true);
+      window.dispatchEvent(
+        new CustomEvent("sense-chip-click", { detail: { topic: TYPED_AUTO_TOPIC } })
+      );
+    }, 720);
+    return () => clearTimeout(t);
+  }, [isTyping, autoAdvanced, typedIndex]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -75,15 +118,14 @@ export function SenseChat() {
   };
 
   const handleChipClick = (topic: string) => {
-    // Dispatch custom event for AnalyzeSection to pick up
+    // Dispatch custom event for AnalyzeSection to swap views. We leave
+    // page scroll alone so the Mac window stays pinned in place while
+    // Ask → Analyze → Act swap inside it.
     window.dispatchEvent(new CustomEvent("sense-chip-click", { detail: { topic } }));
-    // Scroll to analyze content (below the Ask block)
-    const el = document.getElementById("analyze-content");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-[640px] mx-auto space-y-5">
+    <div ref={containerRef} className="flex flex-col items-center w-full max-w-[640px] mx-auto space-y-5">
       <div className="w-full">
         <div
           className="relative rounded-2xl overflow-hidden"

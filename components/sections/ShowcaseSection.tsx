@@ -152,7 +152,7 @@ export default function ShowcaseSection() {
   const sectionRef = useRef<HTMLElement>(null);
 
   const cardBase: React.CSSProperties = {
-    background: "#0c0c0e",
+    background: "var(--card-bg)",
     border: "1px solid rgba(255,255,255,0.06)",
     borderRadius: "18px",
     overflow: "hidden",
@@ -167,9 +167,9 @@ export default function ShowcaseSection() {
   };
 
   const TYPE_TINT: Record<string, { bg: string; border: string }> = {
-    job:     { bg: "linear-gradient(165deg, rgba(56,189,248,0.08) 0%, #141417 65%)", border: "rgba(56,189,248,0.18)" },
-    payment: { bg: "linear-gradient(165deg, rgba(245,158,11,0.09) 0%, #141417 65%)", border: "rgba(245,158,11,0.18)" },
-    contact: { bg: "linear-gradient(165deg, rgba(167,139,250,0.09) 0%, #141417 65%)", border: "rgba(167,139,250,0.18)" },
+    job:     { bg: "linear-gradient(165deg, rgba(56,189,248,0.08) 0%, var(--card-bg) 65%)", border: "rgba(56,189,248,0.18)" },
+    payment: { bg: "linear-gradient(165deg, rgba(245,158,11,0.09) 0%, var(--card-bg) 65%)", border: "rgba(245,158,11,0.18)" },
+    contact: { bg: "linear-gradient(165deg, rgba(167,139,250,0.09) 0%, var(--card-bg) 65%)", border: "rgba(167,139,250,0.18)" },
   };
 
   // Wrap each card with a gradient glow halo
@@ -190,7 +190,7 @@ export default function ShowcaseSection() {
   };
 
   return (
-    <section id="showcase-section" ref={sectionRef} style={{ background: "#000", padding: "160px 0", minHeight: "100vh", overflow: "hidden" }}>
+    <section id="showcase-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "160px 0", minHeight: "100vh", overflow: "hidden" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto 56px", padding: "0 24px" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.2)", borderRadius: "100px", padding: "5px 14px", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "20px" }}>
           Anywhere in Zuper

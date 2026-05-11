@@ -19,6 +19,10 @@ export interface GradientBlindsProps {
   mixBlendMode?: string;
   /** Render one frozen frame: no time animation, no mouse tracking. */
   staticFrame?: boolean;
+  /** Drive the spotlight in an automatic corner-to-corner pulse sweep. */
+  pulseSweep?: boolean;
+  /** Seconds for one full ping-pong cycle when pulseSweep is true. */
+  pulseSweepPeriod?: number;
 }
 
 // Re-export the untyped JSX component with proper TypeScript interface

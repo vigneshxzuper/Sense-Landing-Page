@@ -37,7 +37,9 @@ const GradientBlinds = ({
   distortAmount = 0,
   shineDirection = 'left',
   mixBlendMode = 'lighten',
-  staticFrame = false
+  staticFrame = false,
+  pulseSweep = false,
+  pulseSweepPeriod = 4.2
 }) => {
   const containerRef = useRef(null);
   const rafRef = useRef(null);
@@ -251,12 +253,13 @@ void main() {
         mouseTargetRef.current = [cx, cy];
       }
 
-      // Static mode: pin spotlight to bottom-left + re-render after each
+      // Static mode: pin spotlight to top-left + re-render after each
       // resize so the frozen frame stays in sync with new viewport size.
-      // Note: iMouse uses WebGL convention — y=0 is the bottom of the canvas.
-      if (staticFrame) {
+      // Note: iMouse uses WebGL convention — y=0 is the bottom of the canvas,
+      // so a high y value puts the spotlight near the top.
+      if (staticFrame && !pulseSweep) {
         const sx = gl.drawingBufferWidth * 0.12;
-        const sy = gl.drawingBufferHeight * 0.12;
+        const sy = gl.drawingBufferHeight * 0.72;
         uniforms.iMouse.value = [sx, sy];
         mouseTargetRef.current = [sx, sy];
         if (programRef.current && meshRef.current) {
@@ -283,16 +286,49 @@ void main() {
         uniforms.iMouse.value = [x, y];
       }
     };
-    if (!staticFrame) {
+    if (!staticFrame && !pulseSweep) {
       window.addEventListener('pointermove', onPointerMove);
     }
 
-    if (staticFrame) {
+    if (pulseSweep) {
+      // Pulse-sweep mode: spotlight ping-pongs horizontally between the
+      // bottom-left and bottom-right corners while opacity peaks at the
+      // corners and dims through the middle. Brisk, hypnotic — no mouse
+      // tracking, no random drift.
+      const baseOpacity = spotlightOpacity;
+      const loop = t => {
+        rafRef.current = requestAnimationFrame(loop);
+        const time = t * 0.001;
+        uniforms.iTime.value = time;
+        const period = Math.max(0.5, pulseSweepPeriod);
+        // cos goes 1 → -1 → 1 over one period. Both axes ride the same
+        // phase so the spotlight tracks a straight diagonal between
+        // bottom-left and top-right corners.
+        const phase = Math.cos((time * 2 * Math.PI) / period);
+        const xNorm = 0.5 + 0.42 * phase; // 0.92 → 0.08 → 0.92
+        const yNorm = 0.5 - 0.38 * phase; // 0.12 → 0.88 → 0.12 (WebGL y is bottom-up)
+        uniforms.iMouse.value = [
+          gl.drawingBufferWidth * xNorm,
+          gl.drawingBufferHeight * yNorm
+        ];
+        // |cos| pulses 0 → 1 → 0 → 1 over a period, peaking AT each corner.
+        const pulse = Math.abs(phase);
+        uniforms.uSpotlightOpacity.value = baseOpacity * (0.35 + 0.65 * pulse);
+        if (!paused && programRef.current && meshRef.current) {
+          try {
+            renderer.render({ scene: meshRef.current });
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      };
+      rafRef.current = requestAnimationFrame(loop);
+    } else if (staticFrame) {
       // Render one frozen frame: lock iTime + iMouse to a stable value, draw
-      // once, never animate again. Spotlight pinned to bottom-left.
+      // once, never animate again. Spotlight pinned to top-left.
       uniforms.iTime.value = 0;
       const sx = gl.drawingBufferWidth * 0.12;
-      const sy = gl.drawingBufferHeight * 0.12;
+      const sy = gl.drawingBufferHeight * 0.72;
       uniforms.iMouse.value = [sx, sy];
       mouseTargetRef.current = [sx, sy];
       // Defer one frame so geometry/uniforms are fully wired before draw.
@@ -369,7 +405,10 @@ void main() {
     spotlightSoftness,
     spotlightOpacity,
     distortAmount,
-    shineDirection
+    shineDirection,
+    staticFrame,
+    pulseSweep,
+    pulseSweepPeriod
   ]);
 
   return (

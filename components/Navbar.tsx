@@ -22,15 +22,14 @@ export default function Navbar() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Hide the nav while the user is still inside HeroScrollAnimation
-  // (file slide + zoom-into-monitor). Show it the moment scroll passes
-  // the hero pin (≈500vh, since the hero section pins for 500% of scroll).
-  // Threshold sits at 460vh — a touch before pin release so the nav
-  // settles in alongside HeroSectionStatic's CRT-boot reveal.
+  // Reveal nav as the in-monitor zoom completes and the "Command center"
+  // hero settles full-screen — that's ~t=0.85 of the 300vh pinned timeline
+  // (zoom from t=0.30, duration 0.55). 2.5 × vh lands a hair before so the
+  // nav slides in as the headline locks in, not after pin release.
   const [navReady, setNavReady] = useState(false);
   useEffect(() => {
     const onScroll = () => {
-      if (window.scrollY > window.innerHeight * 4.6) {
+      if (window.scrollY > window.innerHeight * 2.5) {
         if (!navReady) setNavReady(true);
       } else if (navReady) {
         setNavReady(false);

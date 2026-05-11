@@ -1,7 +1,6 @@
 "use client";
 
-import HeroSectionStatic from "@/components/sections/HeroSectionStatic";
-import TypewriterLoop from "@/components/TypewriterLoop";
+import TypewriterOnce from "@/components/TypewriterOnce";
 
 /**
  * HeroScrollAnimation
@@ -22,11 +21,22 @@ import TypewriterLoop from "@/components/TypewriterLoop";
  * and floaty; `ease: "none"` keeps the mapping linear inside the lerp.
  */
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
+import type { ComponentType } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import type { GradientBlindsProps } from "./GradientBlinds";
+
+const GradientBlinds = dynamic<GradientBlindsProps>(
+  () =>
+    import("./GradientBlinds").then(
+      (m) => m.default as ComponentType<GradientBlindsProps>
+    ),
+  { ssr: false }
+);
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -73,10 +83,9 @@ export default function HeroScrollAnimation() {
   const swapBlueOffsetRef = useRef<SVGFEOffsetElement>(null);
   const subTextRef = useRef<HTMLDivElement>(null);
   const futureTextRef = useRef<HTMLDivElement>(null);
+  const blindsBgRef = useRef<HTMLDivElement>(null);
   const swapFlashRef = useRef<HTMLDivElement>(null);
   const swapFxRef = useRef<HTMLDivElement>(null);
-  const staticHeroRef = useRef<HTMLDivElement>(null);
-  const [staticHeroBooted, setStaticHeroBooted] = useState(false);
 
   useGSAP(
     () => {
@@ -84,11 +93,10 @@ export default function HeroScrollAnimation() {
         scrollTrigger: {
           trigger: heroRef.current,
           start: "top top",
-          // Phase 1 (file slide) + Phase 2 (zoom) + Phase 3 (full-black
-          // hold). Total = 500vh: 400vh for the animated phases, then an
-          // extra 100vh of "stay on the black screen with the CRT text"
-          // before the pin releases and the next section starts.
-          end: "+=500%",
+          // Tight scroll budget: file slide (~half a viewport) → swap
+          // kicks in once files clear half-screen → zoom → static-hero
+          // dissolve. Total = 300vh.
+          end: "+=300%",
           scrub: 1.5,
           pin: true,
           anticipatePin: 1,
@@ -108,7 +116,11 @@ export default function HeroScrollAnimation() {
         force3D: true,
       });
 
-      // ── Phase 1 (t=0..1): files crumble + slide down behind the desk
+      // ── Phase 1: files crumble + slide down behind the desk.
+      // Drops over 0..0.22 (~66vh of pinned scroll). `power3.out` (≈
+      // easeOutQuart, the cubic-bezier(0.22, 1, 0.36, 1) curve) gives
+      // the stack a confident initial push then a graceful settle into
+      // the desk — much smoother than the prior linear ramp.
       tl.to(
         fileLayerRef.current,
         {
@@ -116,8 +128,8 @@ export default function HeroScrollAnimation() {
           rotation: 0.4,
           skewX: -0.35,
           scale: 0.992,
-          ease: "none",
-          duration: 1,
+          ease: "power3.out",
+          duration: 0.22,
         },
         0
       ).to(
@@ -125,25 +137,22 @@ export default function HeroScrollAnimation() {
         {
           attr: { scale: 8 },
           ease: "power1.in",
-          duration: 1,
+          duration: 0.22,
         },
         0
       );
 
       // ── Phase 2: zoom into the monitor until black fills view.
-      // Starts at t=0.5 (file halfway down) and ENDS at t=1.0 — same
-      // moment the slide ends — so the pin releases right when black
-      // covers viewport, with no trailing all-black scroll.
-      // power1.in keeps the curve mild so zoom hits full-black close to
-      // the end, not before it.
+      // Picks up immediately after the swap (0.30) so there's no dead
+      // scroll between the laptop appearing and the push-in starting.
       tl.to(
         sceneRef.current,
         {
           scale: ZOOM_END,
           ease: "power1.in",
-          duration: 0.5,
+          duration: 0.55,
         },
-        0.5
+        0.30
       );
 
       // CRT text — single element. Starts on the monitor screen (at the
@@ -163,7 +172,7 @@ export default function HeroScrollAnimation() {
         scale: 0.28,
         xPercent: -50,
         yPercent: -50,
-        top: "41%",
+        top: "calc(18vh + max(17.9vh, 13.425vw) - 7vh + 10px)",
         transformOrigin: "center center",
         force3D: true,
       });
@@ -173,9 +182,9 @@ export default function HeroScrollAnimation() {
           scale: 1.1,
           top: "50%",
           ease: "power2.inOut",
-          duration: 0.5,
+          duration: 0.55,
         },
-        0.5
+        0.30
       );
 
       // Sub-text — green CLI prompt, sits near the bottom of the
@@ -188,7 +197,7 @@ export default function HeroScrollAnimation() {
         scale: 0.28,
         xPercent: -50,
         yPercent: -50,
-        top: "calc(58% - 40px)",
+        top: "calc(18vh + max(17.9vh, 13.425vw) + 7vh + 10px)",
         transformOrigin: "center center",
         force3D: true,
       });
@@ -196,53 +205,49 @@ export default function HeroScrollAnimation() {
         subTextRef.current,
         {
           scale: 1.1,
-          top: "calc(62% - 40px)",
+          top: "50%",
           ease: "power2.inOut",
-          duration: 0.5,
+          duration: 0.55,
         },
-        0.5
+        0.30
       );
 
       // Sub-text follows the orange line out at swap time.
-      tl.to(subTextRef.current, { opacity: 0, ease: "power2.in", duration: 0.05 }, 0.42);
+      tl.to(subTextRef.current, { opacity: 0, ease: "power2.in", duration: 0.05 }, 0.17);
 
       // Future text — appears on the new laptop's screen (viewport
-      // ~62% Y), then drifts up to viewport centre (50% Y) as the
-      // scene zooms in. Same easing as the retro lines so the rise
-      // feels uniform across the whole pin.
+      // ~49% Y, the visible centre of the laptop's display rect), then
+      // drifts up to viewport centre (50% Y) as the scene zooms in.
+      // Initial scale 0.42 keeps the content readable on the screen
+      // before zoom; final scale 1.0 lands it at full hero size.
       gsap.set(futureTextRef.current, {
         opacity: 0,
-        scale: 0.32,
+        scale: 0.42,
         xPercent: -50,
         yPercent: -50,
-        top: "51%",
+        top: "49%",
+        left: "50%",
         transformOrigin: "center center",
         force3D: true,
       });
       tl.to(
         futureTextRef.current,
         {
-          scale: 1.1,
+          scale: 1,
           top: "50%",
           ease: "power2.inOut",
-          duration: 0.5,
+          duration: 0.55,
         },
-        0.5
+        0.30
       );
 
       // ── Computer model swap (retro → modern MacBook).
-      // Plays inside Phase 1 once the files have mostly drained out, so
-      // the swap is staged on a clean desk and the user actually sees
-      // the new laptop *before* Phase 2 zoom starts.
-      //
-      // Glitch design: horizontal-stripe digital tear (sharp, machine-
-      // cut bands shifting in unison) — NOT fluid turbulence — plus a
-      // single cyan scan-line sweeping top→bottom. Reads as a system
-      // hard-cutting between two states, not water rippling.
-      //
-      // Window: t = 0.36 → 0.50 (~140 ms of timeline / ~56vh of pinned
-      // scroll). On-screen text crossfades in the same window from the
-      // retro CRT line to the cyan future line.
+      // Starts at t=0.10 — the moment the file stack passes the half-
+      // screen mark — and overlaps the tail of the file slide so the
+      // laptop appears the instant the desk is clear. Tight window
+      // (0.10 → 0.30) keeps it as a decisive flip; sine.inOut crossfade
+      // spans the full window so even slow inch-by-inch scrubbing reads
+      // as a continuous wipe.
       gsap.set(computerModernRef.current, { opacity: 0, force3D: true });
       gsap.set(computerRetroRef.current,  { opacity: 1, force3D: true });
       gsap.set(swapDisplaceRef.current, { attr: { scale: 0 } });
@@ -250,56 +255,43 @@ export default function HeroScrollAnimation() {
       gsap.set(swapBlueOffsetRef.current, { attr: { dx: 0 } });
       gsap.set(swapFlashRef.current, { opacity: 0, force3D: true });
 
-      // Stripe-tear amplitude crescendo + decay.
-      tl.to(swapDisplaceRef.current, { attr: { scale: 36 }, ease: "power3.in",  duration: 0.10 }, 0.36);
-      tl.to(swapDisplaceRef.current, { attr: { scale: 0 },  ease: "power4.out", duration: 0.10 }, 0.46);
+      const SWAP_START = 0.10;
+      const SWAP_PEAK  = 0.20; // glitch crescendo + crossfade midpoint
+      const SWAP_END   = 0.30;
 
-      tl.to(swapTurbRef.current, { attr: { baseFrequency: "0.0001 1.05" }, ease: "power3.in",  duration: 0.10 }, 0.36);
-      tl.to(swapTurbRef.current, { attr: { baseFrequency: "0.0001 0.65" }, ease: "power4.out", duration: 0.10 }, 0.46);
+      // Stripe-tear amplitude crescendo + decay around the peak.
+      tl.to(swapDisplaceRef.current, { attr: { scale: 36 }, ease: "power3.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
+      tl.to(swapDisplaceRef.current, { attr: { scale: 0 },  ease: "power4.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
 
-      // RGB chromatic split — red drifts right, blue drifts left,
-      // green stays anchored. Animation matches the displacement
-      // window: build at the same beat (so both effects peak together)
-      // and decay together. Peak ±9px is enough to read as channel
-      // misalignment without dissolving recognisable forms.
-      tl.to(swapRedOffsetRef.current,  { attr: { dx: 9  }, ease: "power3.in",  duration: 0.10 }, 0.36);
-      tl.to(swapBlueOffsetRef.current, { attr: { dx: -9 }, ease: "power3.in",  duration: 0.10 }, 0.36);
-      tl.to(swapRedOffsetRef.current,  { attr: { dx: 0  }, ease: "power4.out", duration: 0.10 }, 0.46);
-      tl.to(swapBlueOffsetRef.current, { attr: { dx: 0  }, ease: "power4.out", duration: 0.10 }, 0.46);
+      tl.to(swapTurbRef.current, { attr: { baseFrequency: "0.0001 1.05" }, ease: "power3.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
+      tl.to(swapTurbRef.current, { attr: { baseFrequency: "0.0001 0.65" }, ease: "power4.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
 
-      // Subtle cyan-tinted flash at the glitch peak — hints at the new
-      // scene's palette without blowing the screen out.
-      tl.to(swapFlashRef.current, { opacity: 0.55, ease: "power2.in",  duration: 0.07 }, 0.42);
-      tl.to(swapFlashRef.current, { opacity: 0,    ease: "power2.out", duration: 0.11 }, 0.49);
+      // RGB chromatic split — peaks with the displacement, decays with it.
+      tl.to(swapRedOffsetRef.current,  { attr: { dx: 9  }, ease: "power3.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
+      tl.to(swapBlueOffsetRef.current, { attr: { dx: -9 }, ease: "power3.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
+      tl.to(swapRedOffsetRef.current,  { attr: { dx: 0  }, ease: "power4.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
+      tl.to(swapBlueOffsetRef.current, { attr: { dx: 0  }, ease: "power4.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
 
-      // Computer crossfade — happens UNDER the flash. Sine easings for
-      // a buttery dissolve. Wider window (0.42 → 0.54) overlapping the
-      // flash and the glitch tail.
-      tl.to(computerRetroRef.current,  { opacity: 0, ease: "sine.inOut", duration: 0.12 }, 0.42);
-      tl.to(computerModernRef.current, { opacity: 1, ease: "sine.inOut", duration: 0.12 }, 0.42);
+      // Cyan-tinted flash hugs the peak, hinting at the new palette.
+      tl.to(swapFlashRef.current, { opacity: 0.55, ease: "power2.in",  duration: SWAP_PEAK - SWAP_START - 0.02 }, SWAP_START + 0.02);
+      tl.to(swapFlashRef.current, { opacity: 0,    ease: "power2.out", duration: SWAP_END  - SWAP_PEAK  + 0.02 }, SWAP_PEAK);
 
-      // Text crossfade — sequential, no overlap. Retro out, then future in.
-      tl.to(textRef.current,       { opacity: 0, ease: "power2.in",  duration: 0.05 }, 0.42);
-      tl.to(futureTextRef.current, { opacity: 1, ease: "power2.out", duration: 0.05 }, 0.49);
+      // Computer crossfade spans the full swap window so even one-pixel
+      // scrubs interpolate cleanly between retro and modern frames.
+      tl.to(computerRetroRef.current,  { opacity: 0, ease: "sine.inOut", duration: SWAP_END - SWAP_START }, SWAP_START);
+      tl.to(computerModernRef.current, { opacity: 1, ease: "sine.inOut", duration: SWAP_END - SWAP_START }, SWAP_START);
 
-      // Phase 3 — black hold, then dissolve into the static hero overlay.
-      // Future text fades out, and the static hero (red blinds + matrix
-      // text headline) fades IN over the same beat so the user sees a
-      // single dissolve rather than scrolling to a new section.
-      tl.to({}, { duration: 0.25 }, 1);
-      tl.to(
-        futureTextRef.current,
-        { opacity: 0, ease: "power2.in", duration: 0.12 },
-        1.10
-      );
-      tl.to(
-        staticHeroRef.current,
-        { opacity: 1, ease: "power2.out", duration: 0.18 },
-        1.10
-      );
-      // Flip the static-hero booted flag at the start of the dissolve so
-      // the matrix scramble runs exactly while the section fades in.
-      tl.call(() => setStaticHeroBooted(true), [], 1.10);
+      // Text crossfade — retro out at peak, future in just after.
+      tl.to(textRef.current,       { opacity: 0, ease: "power2.in",  duration: 0.05 }, SWAP_PEAK - 0.03);
+      tl.to(futureTextRef.current, { opacity: 1, ease: "power2.out", duration: 0.05 }, SWAP_PEAK + 0.04);
+      // Gradient blinds bg only fades in AFTER the laptop zoom finishes
+      // (zoom: 0.30 + 0.55 = 0.85). No scale anim — it's a fullscreen
+      // backdrop that arrives once the headline has locked into place.
+      gsap.set(blindsBgRef.current, { opacity: 0, force3D: true });
+      tl.to(blindsBgRef.current, { opacity: 1, ease: "power2.out", duration: 0.10 }, 0.86);
+
+      // Pad timeline tail so scroll budget isn't truncated.
+      tl.to({}, { duration: 0.01 }, 1);
     },
     { scope: heroRef }
   );
@@ -577,14 +569,17 @@ export default function HeroScrollAnimation() {
           style={{
             position: "absolute",
             left: "50%",
-            top: "41%",
+            top: "calc(18vh + max(17.9vh, 13.425vw) - 7vh + 10px)",
             zIndex: 4,
             pointerEvents: "none",
             opacity: 1,
             width: "min(70vw, 880px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             fontFamily: "var(--font-press-start), monospace",
-            fontSize: "clamp(28px, 5.2vw, 80px)",
-            lineHeight: 1.3,
+            fontSize: "clamp(32px, 5.8vw, 92px)",
+            lineHeight: 1.45,
             textAlign: "center",
             color: "#FF9F4A",
             textShadow:
@@ -593,9 +588,11 @@ export default function HeroScrollAnimation() {
             willChange: "opacity, transform",
           }}
         >
-          <span style={{ display: "block", whiteSpace: "nowrap" }}>Still working</span>
-          <span style={{ display: "block", whiteSpace: "nowrap" }}>like it&apos;s the</span>
-          <span style={{ display: "block", whiteSpace: "nowrap" }}>past?</span>
+          <TypewriterOnce
+            lines={["Still working", "like it's the", "past?"]}
+            startDelayMs={350}
+            typeMs={1500}
+          />
         </div>
 
         {/* Matrix-green CLI prompt — sits below the orange block, near
@@ -605,15 +602,15 @@ export default function HeroScrollAnimation() {
           ref={subTextRef}
           style={{
             position: "absolute",
-            left: "50%",
-            top: "calc(58% - 40px)",
+            left: "calc(50% - 40px)",
+            top: "calc(18vh + max(17.9vh, 13.425vw) + 7vh + 10px)",
             zIndex: 4,
             pointerEvents: "none",
             opacity: 1,
             width: "min(70vw, 880px)",
             fontFamily: "var(--font-press-start), monospace",
-            fontSize: "clamp(16px, 2.8vw, 38px)",
-            lineHeight: 1.3,
+            fontSize: "clamp(20px, 3.2vw, 44px)",
+            lineHeight: 1.45,
             textAlign: "center",
             color: "#34F26B",
             textShadow:
@@ -623,62 +620,172 @@ export default function HeroScrollAnimation() {
           }}
         >
           <span style={{ whiteSpace: "nowrap" }}>
-            <TypewriterLoop text="> Scroll into the future" cycleMs={4000} typeMs={1400} />
+            <TypewriterOnce
+              lines={["> Scroll into the future"]}
+              startDelayMs={2050}
+              typeMs={1100}
+            />
             <span className="cli-caret">▌</span>
           </span>
         </div>
 
-        {/* Future text — appears on the modern laptop screen after the
-            swap. Space Grotesk for a slightly geometric, modern display
-            face (used by Vercel/Linear). Larger size + tighter tracking
-            so the line confidently fills the laptop's wide screen rect
-            instead of looking like a tooltip. */}
+        {/* Gradient blinds backdrop — starts at 25% scale around the
+            laptop screen so it reads as content INSIDE the screen, then
+            expands to fullscreen during the scene zoom. zIndex 5 keeps
+            it below futureText (zIndex 6). */}
+        <div
+          ref={blindsBgRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 5,
+            pointerEvents: "none",
+            opacity: 0,
+            willChange: "opacity, transform",
+          }}
+        >
+          <GradientBlinds
+            gradientColors={["#FD8627", "#EA0602"]}
+            angle={180}
+            noise={0.15}
+            blindCount={26}
+            blindMinWidth={40}
+            spotlightRadius={0.55}
+            spotlightSoftness={1}
+            spotlightOpacity={1}
+            mouseDampening={0.15}
+            distortAmount={0}
+            shineDirection="left"
+            mixBlendMode="lighten"
+            staticFrame
+          />
+        </div>
+
+        {/* Future content — a scaled-down preview of the static hero
+            (badge + headline + subhead + CTA pair) painted onto the
+            modern laptop screen after the glitch swap. As the scene
+            zooms in, this composition grows with it, so by the time the
+            pin releases the preview reads as the real hero. Decorative
+            only — the live HeroSectionStatic dissolves on top in phase 3. */}
         <div
           ref={futureTextRef}
           style={{
             position: "absolute",
             left: "50%",
             top: "51%",
-            zIndex: 4,
+            zIndex: 6,
             pointerEvents: "none",
             opacity: 0,
-            width: "min(86vw, 1280px)",
-            fontFamily:
-              "var(--font-space-grotesk), -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif",
-            fontWeight: 600,
-            fontSize: "clamp(34px, 6.4vw, 104px)",
-            lineHeight: 1.08,
-            letterSpacing: "-0.035em",
+            width: "min(88vw, 880px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             textAlign: "center",
             color: "#FFFFFF",
-            textShadow:
-              "0 0 28px rgba(180,225,255,0.42), 0 0 80px rgba(120,180,230,0.22)",
             willChange: "opacity, transform",
           }}
         >
-          Scroll to see the future of doing business with Sense.
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "7px 16px",
+              borderRadius: "999px",
+              marginBottom: "28px",
+              fontSize: "13px",
+              fontWeight: 500,
+              letterSpacing: "0.02em",
+              color: "rgba(255,255,255,0.95)",
+              background: "rgba(10,10,12,0.65)",
+              backdropFilter: "blur(18px) saturate(140%)",
+              WebkitBackdropFilter: "blur(18px) saturate(140%)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
+          >
+            Zuper Sense &middot; Intelligence Layer
+          </div>
+          <h2
+            style={{
+              fontSize: "clamp(48px, 7.5vw, 96px)",
+              fontWeight: 500,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.05,
+              margin: 0,
+              marginBottom: "24px",
+              maxWidth: "1100px",
+              color: "#FFFFFF",
+              fontFeatureSettings: '"ss01", "cv11"',
+              textShadow: "0 1px 8px rgba(0,0,0,0.22)",
+              minHeight: "calc(2em * 1.05)",
+            }}
+          >
+            Command center for your roofing operation.
+          </h2>
+          <p
+            style={{
+              fontSize: "clamp(18px, 2.2vw, 22px)",
+              color: "rgba(255,255,255,0.88)",
+              lineHeight: 1.55,
+              fontWeight: 450,
+              maxWidth: "36rem",
+              margin: 0,
+            }}
+          >
+            Type a question, get an answer, deploy an agent.
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "40px", pointerEvents: "auto" }}>
+            <a
+              href="#analyze-section"
+              onClick={(e) => {
+                e.preventDefault();
+                document.querySelector("#analyze-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "14px 32px",
+                borderRadius: "999px",
+                background: "#ffffff",
+                color: "#111",
+                fontSize: "16px",
+                fontWeight: 500,
+                letterSpacing: "-0.005em",
+                textDecoration: "none",
+                boxShadow:
+                  "0 6px 24px rgba(232,93,58,0.25), 0 2px 8px rgba(0,0,0,0.3)",
+              }}
+            >
+              Request early access
+            </a>
+            <a
+              href="#docs-section"
+              onClick={(e) => {
+                e.preventDefault();
+                document.querySelector("#docs-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "14px 32px",
+                borderRadius: "999px",
+                background: "rgba(20,20,20,0.9)",
+                color: "rgba(255,255,255,0.92)",
+                fontSize: "16px",
+                fontWeight: 500,
+                letterSpacing: "-0.005em",
+                textDecoration: "none",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+            >
+              Watch a demo
+            </a>
+          </div>
         </div>
         </div>
 
-        {/* Static hero overlay — dissolves in over the black at the end
-            of phase 3, replacing the zoom scene with the red-blinds
-            command-center hero. Sits OUTSIDE the swap-fx wrapper so the
-            transition glitch never touches it. The matrix text reveal
-            fires when `staticHeroBooted` flips true (driven by the
-            timeline). */}
-        <div
-          ref={staticHeroRef}
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 5,
-            opacity: 0,
-            pointerEvents: staticHeroBooted ? "auto" : "none",
-            willChange: "opacity",
-          }}
-        >
-          <HeroSectionStatic externalBooted={staticHeroBooted} />
-        </div>
       </div>
     </section>
   );

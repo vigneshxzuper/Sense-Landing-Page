@@ -18,16 +18,17 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
 
-// 6 unique cards spanning chart types — single stat, horizontal bar,
-// line, table, vertical bar (positive), vertical bar (with negatives) —
-// so the deck visually changes shape with every transition.
+// 8 chat-thread screenshots spanning chart types — single stat, bar,
+// line, table — so the deck visually changes shape on each transition.
 const CARDS = [
-  { src: "/assets/anywhere/01.png", caption: "How many new customers were added in the last 3 months?" },
-  { src: "/assets/anywhere/02.png", caption: "Show me customers by city for the last 6 months" },
-  { src: "/assets/anywhere/03.png", caption: "Profit margin by quarter 2025" },
-  { src: "/assets/anywhere/04.png", caption: "Show me unassigned jobs this week" },
-  { src: "/assets/anywhere/05.png", caption: "Total invoice revenue by month for 2025" },
-  { src: "/assets/anywhere/10.png", caption: "Average profit per job per technician for the last 6 months" },
+  { src: "/assets/anywhere/n01.png", caption: "How many new customers were added in the last 3 months?" },
+  { src: "/assets/anywhere/n02.png", caption: "Show me customers by city for the last 6 months" },
+  { src: "/assets/anywhere/n03.png", caption: "Profit margin by quarter 2025" },
+  { src: "/assets/anywhere/n04.png", caption: "Show me unassigned jobs this week" },
+  { src: "/assets/anywhere/n05.png", caption: "Show me total invoice revenue by month for 2025" },
+  { src: "/assets/anywhere/n06.png", caption: "What is our estimate to job conversion rate for 2025" },
+  { src: "/assets/anywhere/n07.png", caption: "Show me new users added by month for 2025" },
+  { src: "/assets/anywhere/n08.png", caption: "Average profit per job per technician for the last 6 months" },
 ];
 
 export default function AnywhereSection() {
@@ -174,15 +175,15 @@ export default function AnywhereSection() {
           <div
             style={{
               position: "relative",
-              width: "min(1320px, 92vw)",
+              width: "min(960px, 74vw)",
               aspectRatio: "2000 / 1152",
-              maxHeight: "84vh",
+              maxHeight: "68vh",
             }}
           >
             {CARDS.map((card, i) => {
-              // Cycle through the three noisy gradient backplates so adjacent
+              // Cycle through six wallpaper-style backplates so adjacent
               // cards don't share the same hue.
-              const bgIndex = (i % 3) + 1;
+              const bgKey = ["e", "f", "g", "h", "i", "j"][i % 6];
               return (
                 <div
                   key={i}
@@ -192,75 +193,111 @@ export default function AnywhereSection() {
                   style={{
                     position: "absolute",
                     inset: 0,
-                    borderRadius: "24px",
+                    borderRadius: "14px",
                     overflow: "hidden",
-                    border: "1px solid rgba(255,255,255,0.14)",
+                    border: "1px solid rgba(255,255,255,0.22)",
                     boxShadow: [
-                      "0 40px 100px -32px rgba(0,0,0,0.8)",
-                      "0 18px 48px -20px rgba(0,0,0,0.6)",
-                      "inset 0 1px 0 rgba(255,255,255,0.18)",
-                      "inset 0 -1px 0 rgba(0,0,0,0.4)",
+                      "0 50px 120px -36px rgba(0,0,0,0.85)",
+                      "0 20px 56px -22px rgba(0,0,0,0.65)",
+                      "0 0 0 1px rgba(255,255,255,0.04)",
+                      "inset 0 1.5px 0 rgba(255,255,255,0.32)",
+                      "inset 0 -1px 0 rgba(0,0,0,0.45)",
+                      "inset 1px 0 0 rgba(255,255,255,0.08)",
+                      "inset -1px 0 0 rgba(255,255,255,0.08)",
                     ].join(", "),
                     willChange: "transform",
                     backfaceVisibility: "hidden",
-                    background: "#0a0a0d",
+                    background: "rgba(18,18,22,0.6)",
                   }}
                 >
-                  {/* Gradient backplate — fills the whole card behind the screenshot */}
+                  {/* Gradient backplate — cycles bg-e..j across cards */}
                   <Image
-                    src={`/assets/anywhere/bg-${bgIndex}.png`}
+                    src={`/assets/anywhere/bg-${bgKey}.png`}
                     alt=""
                     fill
-                    sizes="(max-width: 1320px) 92vw, 1320px"
+                    sizes="(max-width: 960px) 74vw, 960px"
                     priority={i < 2}
                     style={{ objectFit: "cover" }}
                   />
 
-                  {/* Inner padding holds the framed screenshot away from the
-                      gradient edges, letting the backdrop show as a halo.
-                      Uniform inset keeps the inner aspect ratio equal to
-                      the outer (and to the image), so `objectFit: contain`
-                      shows the full screenshot edge-to-edge inside the
-                      inner frame — no side bands of inner-frame bg. */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: "5%",
-                      borderRadius: "14px",
-                      overflow: "hidden",
-                      border: "1px solid rgba(255,255,255,0.16)",
-                      boxShadow: [
-                        "0 24px 60px -20px rgba(0,0,0,0.7)",
-                        "0 8px 24px -10px rgba(0,0,0,0.5)",
-                        "inset 0 1px 0 rgba(255,255,255,0.2)",
-                      ].join(", "),
-                      background: "#0a0a0d",
-                    }}
-                  >
-                    <Image
-                      src={card.src}
-                      alt={card.caption}
-                      fill
-                      sizes="(max-width: 1320px) 88vw, 1240px"
-                      priority={i < 2}
-                      style={{ objectFit: "contain", objectPosition: "center" }}
-                    />
-                  </div>
-
-                  {/* Outer card top-edge highlight (sits on the gradient) */}
+                  {/* Glass-frame highlight — subtle inner gradient that
+                      reads as a chrome ring around the inner card. */}
                   <div
                     aria-hidden
                     style={{
                       position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: "1px",
+                      inset: 0,
+                      borderRadius: "14px",
                       background:
-                        "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%)",
+                        "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 18%, rgba(255,255,255,0) 82%, rgba(0,0,0,0.18) 100%)",
                       pointerEvents: "none",
                     }}
                   />
+
+                  {/* Inner frame — Mac dark-mode window: chrome title bar
+                      with traffic lights + URL pill on top, screenshot
+                      below. No stroke around the inner frame. */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: "2%",
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                      boxShadow: [
+                        "0 28px 70px -22px rgba(0,0,0,0.75)",
+                        "0 10px 28px -12px rgba(0,0,0,0.55)",
+                      ].join(", "),
+                      background: "#1a1a1d",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    {/* macOS dark title bar */}
+                    <div
+                      style={{
+                        position: "relative",
+                        flex: "0 0 auto",
+                        height: "34px",
+                        background: "#1d1d20",
+                        borderBottom: "1px solid rgba(255,255,255,0.08)",
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "0 14px",
+                      }}
+                    >
+                      {/* Traffic lights — macOS canonical colours */}
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FF5F56" }} />
+                        <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#FFBD2E" }} />
+                        <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#27C93F" }} />
+                      </div>
+                      {/* URL pill — centered */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: "50%",
+                          top: "50%",
+                          transform: "translate(-50%, -50%)",
+                          width: "min(220px, 38%)",
+                          height: "18px",
+                          borderRadius: "9px",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          background: "rgba(255,255,255,0.02)",
+                        }}
+                      />
+                    </div>
+                    {/* Screenshot area */}
+                    <div style={{ position: "relative", flex: "1 1 auto", background: "#ffffff" }}>
+                      <Image
+                        src={card.src}
+                        alt={card.caption}
+                        fill
+                        sizes="(max-width: 960px) 70vw, 900px"
+                        priority={i < 2}
+                        style={{ objectFit: "contain", objectPosition: "center" }}
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })}

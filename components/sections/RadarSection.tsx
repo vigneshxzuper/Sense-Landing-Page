@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 import { AlertTriangle, Clock, FileText, Users, DollarSign, TrendingUp, TrendingDown, BarChart3, Activity, Wrench, MapPin, CalendarDays, Phone, HardHat } from "lucide-react";
 import ScrollFloat from "@/components/ScrollFloat";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
 
 const ALERT_CARDS = [
   { icon: FileText, label: "Stuck supplements", value: "7", sub: "$164,300 sitting with carriers", detail: "Submitted 30+ days ago. Oldest is State Farm at 47 days.", color: "#FCD34D", bg: "linear-gradient(160deg, rgba(245,158,11,0.14) 0%, var(--surface2) 100%)", border: "rgba(245,158,11,0.30)", glow: "rgba(245,158,11,0.25)" },
@@ -40,10 +47,128 @@ const CREWS = [
 
 export default function RadarSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const targetSlotRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [alertOrder, setAlertOrder] = useState([0, 1, 2, 3]);
   const [grabbedCard, setGrabbedCard] = useState<number | null>(null);
   const [liftPhase, setLiftPhase] = useState<"idle" | "lifting" | "moving" | "dropping">("idle");
+
+  // Shared-element transition. The live activity card lives in
+  // AnalyzeSection's Act view; we don't render a copy. Instead, as the
+  // user scrolls toward this section, we apply a transform to the
+  // SAME DOM node (#live-activity-source) so it physically travels
+  // from its slot in the Mac window to the empty placeholder slot
+  // here. Both source and target rects are recomputed each frame, so
+  // the lerp stays correct even with intermediate layout shifts.
+  useGSAP(() => {
+    const source = document.getElementById("live-activity-source") as HTMLElement | null;
+    const target = targetSlotRef.current;
+    if (!source || !target) return;
+
+    // Smooth-follow state. We compute a `desired` position from scroll
+    // each frame, then ease the rendered transform toward it with a
+    // light lerp — that absorbs scroll event jitter and gives the card
+    // a soft inhabited feel without lagging behind input perceptibly.
+    let currentDx = 0;
+    let currentDy = 0;
+    let active = false;
+    let rafId = 0;
+
+    const computeDesired = () => {
+      // Strip our inline transform momentarily so getBoundingClientRect
+      // reflects the source's rendered position WITHOUT our contribution,
+      // but WITH any parent transforms (view-state translates etc.).
+      const inline = source.style.transform;
+      source.style.transform = "none";
+      const baseRect = source.getBoundingClientRect();
+      source.style.transform = inline;
+
+      const baseCenter = {
+        x: baseRect.left + baseRect.width / 2,
+        y: baseRect.top + baseRect.height / 2,
+      };
+      const tRect = target.getBoundingClientRect();
+      const tCenter = {
+        x: tRect.left + tRect.width / 2,
+        y: tRect.top + tRect.height / 2,
+      };
+      const vpCenter = {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      };
+
+      // Phase decisions read AnalyzeSection's bottom edge so the card
+      // lifts the moment the user scrolls away from the Act view, not
+      // when the radar dashboard slot finally crosses the fold.
+      //   • analyze bottom still below viewport bottom → card at source
+      //     (user is still inside Act, mac at centre)
+      //   • analyze bottom rising toward viewport top → card floats
+      //     toward viewport centre, then onto target slot
+      const analyzeSection = document.getElementById("analyze-section");
+      const aRect = analyzeSection?.getBoundingClientRect();
+      const analyzeBottom = aRect ? aRect.bottom : window.innerHeight + 1;
+      const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+      const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+      // easeOutQuint — crisp, decelerating curve. Same family as the
+      // cubic-bezier(0.22, 1, 0.36, 1) we use across the site so this
+      // motion feels native to the system's overall easing language.
+      const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
+
+      // Single continuous trajectory from the source slot directly to
+      // the target slot. NO viewport-centre waypoint — the card never
+      // "parks" mid-flight. Progress is driven by how far analyze's
+      // bottom edge has scrolled above the viewport bottom.
+      //
+      // The denominator is innerHeight * 1.55 (not 1×) — extends the
+      // scroll range that drives the flight, so the card travels slower
+      // than the scroll for a more cinematic, deliberate arrival.
+      let desiredCenter: { x: number; y: number };
+      if (analyzeBottom >= window.innerHeight) {
+        desiredCenter = baseCenter;
+        active = false;
+      } else {
+        const rawP = clamp01(
+          (window.innerHeight - analyzeBottom) / (window.innerHeight * 1.55)
+        );
+        const p = easeOutQuint(rawP);
+        desiredCenter = {
+          x: lerp(baseCenter.x, tCenter.x, p),
+          y: lerp(baseCenter.y, tCenter.y, p),
+        };
+        active = rawP > 0;
+      }
+      void vpCenter; // retained for future tuning, intentionally unused
+
+      return {
+        dx: desiredCenter.x - baseCenter.x,
+        dy: desiredCenter.y - baseCenter.y,
+      };
+    };
+
+    // Per-frame lerp toward desired. 0.055 ≈ 320 ms half-life at 60 fps —
+    // the card visibly trails scroll for a slower, more cinematic
+    // arrival. Combined with the extended progress range above, the
+    // flight reads as a deliberate handoff rather than a snap.
+    const LERP = 0.055;
+    const tick = () => {
+      const { dx, dy } = computeDesired();
+      currentDx += (dx - currentDx) * LERP;
+      currentDy += (dy - currentDy) * LERP;
+      // Snap when close enough so we don't churn forever.
+      if (Math.abs(dx - currentDx) < 0.05) currentDx = dx;
+      if (Math.abs(dy - currentDy) < 0.05) currentDy = dy;
+      source.style.transform = `translate3d(${currentDx}px, ${currentDy}px, 0)`;
+      source.style.zIndex = active ? "20" : "";
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      source.style.transform = "";
+      source.style.zIndex = "";
+    };
+  }, { scope: sectionRef });
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -125,7 +250,7 @@ export default function RadarSection() {
   });
 
   return (
-    <section id="radar-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "160px 24px", minHeight: "100vh", overflow: "hidden" }}>
+    <section id="radar-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "60px 24px 120px", minHeight: "100vh", overflow: "hidden" }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ marginBottom: "60px" }}>
         </div>
@@ -143,8 +268,49 @@ export default function RadarSection() {
           </p>
         </div>
 
+        {/* Top dashboard row — Live Activity landing slot + Crews today.
+            Both sit at the top so the card flying in from the Act view
+            settles at the top of the dashboard rather than buried below. */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px", marginTop: "40px" }}>
+          <div
+            ref={targetSlotRef}
+            aria-hidden
+            style={{
+              borderRadius: "14px",
+              border: "1px dashed var(--card-border)",
+              opacity: 0,
+              minHeight: "100%",
+            }}
+          />
+          <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(0) }}>
+            <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>Crews today</div>
+            {CREWS.map((c, i) => (
+              <div
+                key={c.name}
+                style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  marginBottom: i < CREWS.length - 1 ? "10px" : 0,
+                  paddingBottom: i < CREWS.length - 1 ? "10px" : 0,
+                  borderBottom: i < CREWS.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                }}
+              >
+                <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(167,139,250,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <HardHat className="w-4 h-4" style={{ color: "#A78BFA" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: "13px", color: "var(--ink)", fontWeight: 500 }}>
+                    {c.name} · <span style={{ color: "var(--ink2)", fontWeight: 400 }}>{c.role}</span>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "var(--ink3)" }}>{c.status}</div>
+                </div>
+                <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: c.active ? "#22C55E" : "#F59E0B", boxShadow: c.active ? "0 0 6px #22C55E" : "none", flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* KPI row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "16px", marginTop: "40px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "16px" }}>
           {KPI_CARDS.map((k, i) => (
             <div
               key={k.label}
@@ -250,8 +416,10 @@ export default function RadarSection() {
           })}
         </div>
 
-        {/* Bottom grid: 3 columns */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+        {/* Bottom grid: 2 columns × 2 rows. One slot in the second row
+            is the target landing zone for the live activity card that
+            travels in from AnalyzeSection. */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
 
           {/* Revenue MTD vs target */}
           <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(8) }}>
@@ -309,32 +477,6 @@ export default function RadarSection() {
             </div>
           </div>
 
-          {/* Crews today */}
-          <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(10) }}>
-            <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>Crews today</div>
-            {CREWS.map((c, i) => (
-              <div
-                key={c.name}
-                style={{
-                  display: "flex", alignItems: "center", gap: "10px",
-                  marginBottom: i < CREWS.length - 1 ? "10px" : 0,
-                  paddingBottom: i < CREWS.length - 1 ? "10px" : 0,
-                  borderBottom: i < CREWS.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
-                }}
-              >
-                <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "rgba(167,139,250,0.14)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <HardHat className="w-4 h-4" style={{ color: "#A78BFA" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "13px", color: "var(--ink)", fontWeight: 500 }}>
-                    {c.name} · <span style={{ color: "var(--ink2)", fontWeight: 400 }}>{c.role}</span>
-                  </div>
-                  <div style={{ fontSize: "11px", color: "var(--ink3)" }}>{c.status}</div>
-                </div>
-                <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: c.active ? "#22C55E" : "#F59E0B", boxShadow: c.active ? "0 0 6px #22C55E" : "none", flexShrink: 0 }} />
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Upcoming jobs — full width */}
