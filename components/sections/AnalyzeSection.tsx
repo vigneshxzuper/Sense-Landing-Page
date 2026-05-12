@@ -766,7 +766,15 @@ export default function AnalyzeSection() {
                 <span style={{ fontSize: "11px", color: "var(--ink3)" }}>Live · updated just now</span>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", alignItems: "start" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateAreas: `"overdue dormant" "overdue stuck" "missed missed"`,
+                  gap: "12px",
+                  alignItems: "stretch",
+                }}
+              >
                 {/* Overdue invoices — matches the result card from the
                     intro prompt (header + big $, aging bars, Added-to-
                     Radar pill). Glows with the "NEW" ring once it
@@ -774,8 +782,7 @@ export default function AnalyzeSection() {
                 <div
                   style={{
                     position: "relative",
-                    gridColumn: "1 / span 1",
-                    gridRow: "1 / span 2",
+                    gridArea: "overdue",
                     background: "var(--card-bg)",
                     border: "1px solid var(--card-border)",
                     borderRadius: "14px",
@@ -860,7 +867,7 @@ export default function AnalyzeSection() {
                 </div>
 
                 {/* Dormant estimates — donut chart of aging buckets */}
-                <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ gridArea: "dormant", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px", justifyContent: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <Clock className="w-4 h-4" style={{ color: "#FCA5A5" }} />
                     <span style={{ fontSize: "13px", fontWeight: 600, color: "#FCA5A5" }}>Dormant estimates</span>
@@ -918,7 +925,7 @@ export default function AnalyzeSection() {
                 </div>
 
                 {/* Stuck supplements — horizontal bars by carrier */}
-                <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ gridArea: "stuck", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px", justifyContent: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <FileText className="w-4 h-4" style={{ color: "#FCD34D" }} />
@@ -946,8 +953,9 @@ export default function AnalyzeSection() {
                   </div>
                 </div>
 
-                {/* Missed calls — sparkline of last 7 days */}
-                <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                {/* Missed calls — sparkline of last 7 days, full-width
+                    row anchoring the bottom of the dashboard. */}
+                <div style={{ gridArea: "missed", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <Phone className="w-4 h-4" style={{ color: "#C4B5FD" }} />
@@ -1175,13 +1183,38 @@ export default function AnalyzeSection() {
                         </div>
                       </div>
 
-                      {/* Insight callout */}
-                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "#FCA5A5", lineHeight: 1.55 }}>
-                        <AlertTriangle className="w-3.5 h-3.5" style={{ flexShrink: 0, marginTop: "2px" }} />
-                        <span>
-                          <strong>The storm caller is the priority.</strong> Same zip code as Tuesday&apos;s hail report and they&apos;re calling a competitor next if no one picks up.
-                        </span>
-                      </div>
+                      {/* Prediction card — only when scroll reaches the Predict tab */}
+                      {activeTab === "predict" && (
+                        <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
+                                <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FCA5A5" }} />
+                              </span>
+                              <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · Next 24 hrs</span>
+                            </div>
+                            <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>87% confidence</span>
+                          </div>
+                          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                            Storm-damage cluster forming on Tuesday&apos;s hail line.
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: "6px 12px", fontSize: "11.5px", color: "var(--ink2)", lineHeight: 1.5 }}>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Pattern</span>
+                            <span>918-555-0144 called twice, no voicemail. Same ZIP as Tuesday&apos;s hail report — 3 of yesterday&apos;s missed calls cluster here.</span>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Risk</span>
+                            <span>Storm leads dial <strong style={{ color: "#FCA5A5" }}>~2 competitors within 4 hours</strong>. $22K job likely lost by 9 AM tomorrow.</span>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Window</span>
+                            <span>Inspection has to land before noon today to win the call-back.</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                            <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Recommended</span>
+                            <span style={{ fontSize: "12px", color: "var(--ink)", flex: 1 }}>
+                              Route <strong>Patel</strong> to 918-555-0144 for a roof-leak inspection before 11 AM.
+                            </span>
+                            <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$22K saved</span>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
                   )}
@@ -1221,13 +1254,38 @@ export default function AnalyzeSection() {
                         </div>
                       </div>
 
-                      {/* Insight callout */}
-                      <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "#FCA5A5", lineHeight: 1.55 }}>
-                        <AlertTriangle className="w-3.5 h-3.5" style={{ flexShrink: 0, marginTop: "2px" }} />
-                        <span>
-                          <strong>State Farm is the biggest exposure.</strong> 3 of the 7 claims sit with one adjuster.
-                        </span>
-                      </div>
+                      {/* Prediction card — Predict tab only */}
+                      {activeTab === "predict" && (
+                        <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
+                                <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FCA5A5" }} />
+                              </span>
+                              <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · 9-day projection</span>
+                            </div>
+                            <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>91% confidence</span>
+                          </div>
+                          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                            State Farm DSO is about to break threshold.
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: "6px 12px", fontSize: "11.5px", color: "var(--ink2)", lineHeight: 1.5 }}>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Pattern</span>
+                            <span>3 of 7 stuck claims share one adjuster (Mike Tucker). Average response: 14 days, drifting from 9 last quarter.</span>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Risk</span>
+                            <span><strong style={{ color: "#FCA5A5" }}>$72K</strong> of the $164K total crosses into the 60+ aging bucket in 9 days — carrier DSO climbs 72 → 53 days.</span>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Window</span>
+                            <span>Escalate before Friday&apos;s claim review or those 3 claims roll another 30 days.</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                            <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Recommended</span>
+                            <span style={{ fontSize: "12px", color: "var(--ink)", flex: 1 }}>
+                              <strong>Casey</strong> escalates the 3 Tucker claims to State Farm regional supervisor.
+                            </span>
+                            <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$72K recovered</span>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
                   )}
@@ -1270,13 +1328,38 @@ export default function AnalyzeSection() {
                         </div>
                       </div>
 
-                      {/* Insight callout */}
-                      <div style={{ background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.22)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "rgba(255,196,170,0.95)", lineHeight: 1.55 }}>
-                        <Lightbulb className="w-3.5 h-3.5" style={{ flexShrink: 0, marginTop: "2px" }} />
-                        <span>
-                          Estimates this size close <strong>3× more often</strong> when re-engaged in the first 2 weeks.
-                        </span>
-                      </div>
+                      {/* Prediction card — Predict tab only */}
+                      {activeTab === "predict" && (
+                        <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
+                                <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FCA5A5" }} />
+                              </span>
+                              <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · 14-day window</span>
+                            </div>
+                            <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>83% confidence</span>
+                          </div>
+                          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                            Estimate close rate is falling off a cliff at day 14.
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: "6px 12px", fontSize: "11.5px", color: "var(--ink2)", lineHeight: 1.5 }}>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Pattern</span>
+                            <span>Estimates over $25K close <strong style={{ color: "#FCA5A5" }}>3× more often</strong> when re-engaged in the first 14 days. 7 of 12 are already past that window.</span>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Risk</span>
+                            <span>Conversion drops from <strong>38% → 13%</strong> if untouched by Friday. ~$240K of the $483K pipeline at stake.</span>
+                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Window</span>
+                            <span>Hargrove + Elmwood ($122K combined) cross the threshold this week.</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                            <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Recommended</span>
+                            <span style={{ fontSize: "12px", color: "var(--ink)", flex: 1 }}>
+                              <strong>Morgan</strong> books second walkthroughs for Hargrove + Elmwood by Thursday.
+                            </span>
+                            <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$122K likely</span>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
                   )}

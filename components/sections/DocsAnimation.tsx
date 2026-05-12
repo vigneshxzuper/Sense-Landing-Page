@@ -42,12 +42,14 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
   const sDrift = i * 0.005;
 
   // progress 0 = section just entered bottom of viewport
-  // progress 1 = section exited top of viewport
-  // entry fade 0 → 0.15, dwell 0.15 → 0.30, fly to grid 0.30 → 0.55,
-  // hold final state through 1.
-  const entryOpacity = useTransform(progress, [0.0, 0.15 + sDrift], [0, 1]);
-  const morphStart = 0.30 + sDrift;
-  const morphEnd = 0.55 + sDrift;
+  // Wrapper is 200vh: first viewport scrolls the icons through entry +
+  // morph (lands by 0.40), second viewport is dwell — formed logo
+  // stays static while the user scrolls — before the section ends.
+  // Icons stay fully opaque from the very start so they never read as
+  // washed out — only the morph (scatter → grid) is scroll-driven.
+  const entryOpacity = 1;
+  const morphStart = 0.18 + sDrift;
+  const morphEnd = 0.40 + sDrift;
   const iconOpacity = useTransform(progress, [0, 1], [1, 1]);
 
   const xRaw = useTransform(progress, [morphStart, morphEnd], [from.x, to.x]);
@@ -87,8 +89,8 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
           position: "absolute", inset: 0,
           borderRadius: "26%",
           background: solid
-            ? "radial-gradient(120% 100% at 30% 20%, #FFB085 0%, #FF7F4E 30%, #E85D3A 60%, #B8421A 100%)"
-            : "radial-gradient(120% 100% at 30% 20%, #FFFAF2 0%, #FDEEDD 35%, #FBE0CE 65%, #D9B896 100%)",
+            ? "radial-gradient(120% 100% at 30% 20%, #FFC59E 0%, #FF8B5A 30%, #F2613C 60%, #D24A1F 100%)"
+            : "radial-gradient(120% 100% at 30% 20%, #FFFFFB 0%, #FFF1DE 35%, #FFD9B8 65%, #E0BC95 100%)",
           boxShadow: [
             // deeper staircase side face — smooth ramp from mid to deep shade
             solid ? "1px 1px 0 #CA4E24" : "1px 1px 0 #D7B095",
@@ -106,8 +108,11 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
             "inset 3px 0 3px rgba(255,255,255,0.4)",
             "inset 0 -4px 6px rgba(90,30,5,0.3)",
             "inset -3px 0 4px rgba(90,30,5,0.18)",
-            // glossy rim
-            "inset 0 0 0 1px rgba(255,255,255,0.35)",
+            // glossy rim — brighter so the tile reads against the
+            // orange aurora behind it
+            "inset 0 0 0 1px rgba(255,255,255,0.55)",
+            // outer glow to pop off the dark bg
+            solid ? "0 0 24px -2px rgba(255,140,90,0.45)" : "0 0 22px -2px rgba(255,235,210,0.32)",
             // ambient ground shadow
             "0 30px 50px -18px rgba(0,0,0,0.55)",
             "0 14px 24px -10px rgba(0,0,0,0.32)",
@@ -178,30 +183,28 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
 export default function DocsAnimation() {
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // Drive icon choreography from the section's own scroll progress.
-  // 0 = section's top just hit the viewport bottom; 1 = section's bottom
-  // just left the viewport top. Animation runs while the section is on
-  // screen; the icons land in the final grid by the time the section is
-  // centred and stay there as the user scrolls past.
+  // Drive icon choreography from the wrapper's scroll progress. The
+  // wrapper is 300vh tall so the user gets ~1 viewport to scroll the
+  // icons into the Sense logo, then ~1 viewport of dwell where the
+  // formed logo is static, before the section ends and scroll
+  // continues. Sticky inner pin keeps the visual fixed during dwell.
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ["start end", "end start"],
+    offset: ["start start", "end end"],
   });
 
-  const auroraOpacity = 0.6;
-  const auroraY = 0;
-  const grainOpacity = 0;
 
   return (
     <div
       id="docs-section"
       ref={sectionRef}
-      style={{ position: "relative" }}
+      style={{ position: "relative", height: "200vh" }}
     >
       <section
         style={{
-          position: "relative",
-          minHeight: "100vh",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
           background: "var(--bg)",
           display: "flex",
           flexDirection: "column",
@@ -211,64 +214,6 @@ export default function DocsAnimation() {
           padding: "120px 0",
         }}
       >
-        {/* Aurora */}
-        <motion.svg
-          aria-hidden
-          viewBox="0 0 800 800"
-          preserveAspectRatio="xMidYMid slice"
-          style={{
-            position: "absolute", inset: "-10%",
-            width: "120%", height: "120%",
-            zIndex: 0, pointerEvents: "none",
-            y: auroraY, opacity: auroraOpacity,
-          }}
-        >
-          <defs>
-            <radialGradient id="docs-blob-a" cx="50%" cy="45%" r="55%">
-              <stop offset="0%" stopColor="#E85D3A" stopOpacity="0.55" />
-              <stop offset="45%" stopColor="#C4472A" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#0A0A0B" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="docs-blob-b" cx="30%" cy="70%" r="45%">
-              <stop offset="0%" stopColor="#FD8627" stopOpacity="0.4" />
-              <stop offset="60%" stopColor="#E85D3A" stopOpacity="0.1" />
-              <stop offset="100%" stopColor="#0A0A0B" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="docs-blob-c" cx="75%" cy="28%" r="38%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="0.18" />
-              <stop offset="70%" stopColor="#ffffff" stopOpacity="0.02" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-            </radialGradient>
-            <filter id="docs-soft" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="42" />
-            </filter>
-          </defs>
-          <g filter="url(#docs-soft)" style={{ mixBlendMode: "screen" }}>
-            <ellipse cx="400" cy="380" rx="360" ry="300" fill="url(#docs-blob-a)" />
-            <ellipse cx="260" cy="540" rx="240" ry="200" fill="url(#docs-blob-b)" />
-            <ellipse cx="580" cy="240" rx="180" ry="160" fill="url(#docs-blob-c)" />
-          </g>
-        </motion.svg>
-
-        {/* Grain */}
-        <motion.svg
-          aria-hidden viewBox="0 0 400 400"
-          preserveAspectRatio="xMidYMid slice"
-          style={{
-            position: "absolute", inset: 0,
-            width: "100%", height: "100%",
-            zIndex: 0, pointerEvents: "none",
-            opacity: grainOpacity, mixBlendMode: "overlay",
-          }}
-        >
-          <defs>
-            <filter id="docs-grain-fx">
-              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" />
-              <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.4 0" />
-            </filter>
-          </defs>
-          <rect width="100%" height="100%" filter="url(#docs-grain-fx)" />
-        </motion.svg>
 
         {/* Split layout — Sense logo formation on the left, copy + CTA
             on the right. Both columns sit on top of the aurora/grain

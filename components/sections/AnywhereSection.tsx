@@ -105,50 +105,19 @@ export default function AnywhereSection() {
 
   return (
     <>
-      {/* Intro band — title scrolls past normally, never overlaps the deck */}
+      {/* Spacer band — gives a bit of breathing room before the pin
+          engages. The pill + title now both live inside the pinned
+          stage so they stay visible the whole time the deck stacks. */}
       <section
         style={{
           background: "var(--bg)",
-          padding: "120px 24px 60px",
-          textAlign: "center",
+          padding: "48px 24px 8px",
         }}
-        aria-label="Anywhere in Zuper intro"
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "5px 14px",
-            borderRadius: "999px",
-            border: "1px solid var(--card-border)",
-            background: "var(--card-bg)",
-            color: "var(--ink2)",
-            fontSize: "12px",
-            fontWeight: 500,
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-            marginBottom: "18px",
-          }}
-        >
-          Anywhere in Zuper
-        </div>
-        <h2
-          style={{
-            fontSize: "clamp(28px, 4vw, 56px)",
-            fontWeight: 600,
-            letterSpacing: "-0.04em",
-            lineHeight: 1.1,
-            color: "var(--ink)",
-            margin: "0 auto",
-            maxWidth: "820px",
-          }}
-        >
-          See everything Sense can do.
-        </h2>
-      </section>
+        aria-label="Anywhere in Zuper intro spacer"
+      />
 
-      {/* Pinned card stage — purely the deck, no title overlap */}
+      {/* Pinned card stage — pill + title pinned to the top so both
+          remain in view while the deck stacks underneath. */}
       <section
         ref={sectionRef}
         data-no-snap
@@ -161,10 +130,61 @@ export default function AnywhereSection() {
         }}
         aria-label="Anywhere in Zuper"
       >
+        {/* Pinned eyebrow pill + title — both anchored below the fixed
+            top nav so the user always sees both while scrolling through
+            the stacked card deck. */}
         <div
           style={{
             position: "absolute",
-            inset: 0,
+            top: "88px",
+            left: 0,
+            right: 0,
+            zIndex: 5,
+            textAlign: "center",
+            pointerEvents: "none",
+            padding: "0 24px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "5px 14px",
+              borderRadius: "999px",
+              border: "1px solid var(--card-border)",
+              background: "var(--card-bg)",
+              color: "var(--ink2)",
+              fontSize: "12px",
+              fontWeight: 500,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+            }}
+          >
+            Anywhere in Zuper
+          </div>
+          <h2
+            style={{
+              fontSize: "clamp(22px, 2.8vw, 34px)",
+              fontWeight: 600,
+              letterSpacing: "-0.035em",
+              lineHeight: 1.1,
+              color: "var(--ink)",
+              margin: 0,
+              maxWidth: "820px",
+            }}
+          >
+            See everything Sense can do.
+          </h2>
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            inset: "200px 0 0 0",
             zIndex: 1,
             display: "flex",
             alignItems: "center",
