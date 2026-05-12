@@ -48,7 +48,7 @@ export default function Footer() {
                 </svg>
               </div>
               <div>
-                <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>
+                <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em" }}>
                   Zuper Sense
                 </div>
                 <div style={{ fontSize: "11px", color: "var(--ink3)" }}>Intelligence Layer</div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 import { Sun, Moon, ChevronDown } from "lucide-react";
+import RollText from "@/components/RollText";
 import NavZuperAIMenu from "./NavZuperAIMenu";
 import NavProductMenu from "./NavProductMenu";
 import NavSolutionsMenu from "./NavSolutionsMenu";
@@ -53,18 +54,16 @@ export default function Navbar() {
     <nav
       style={{
         position: "fixed",
-        top: "14px",
-        left: "50%",
-        transform: navReady
-          ? "translateX(-50%) translateY(0)"
-          : "translateX(-50%) translateY(-120%)",
+        top: 0,
+        left: 0,
+        right: 0,
+        transform: navReady ? "translateY(0)" : "translateY(-100%)",
         opacity: navReady ? 1 : 0,
         pointerEvents: navReady ? "auto" : "none",
         transition:
           "opacity 480ms cubic-bezier(0.22, 1, 0.36, 1), transform 480ms cubic-bezier(0.22, 1, 0.36, 1)",
         zIndex: 9999,
-        width: "calc(100% - 48px)",
-        maxWidth: "1100px",
+        width: "100%",
       }}
     >
       <div
@@ -72,19 +71,15 @@ export default function Navbar() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          height: "68px",
-          padding: "0 6px 0 20px",
-          borderRadius: "14px",
+          height: "64px",
+          padding: "0 24px",
           background: isDark
             ? "rgba(12,12,14,0.82)"
-            : "rgba(255,255,255,0.55)",
+            : "rgba(255,255,255,0.78)",
           backdropFilter: "blur(24px) saturate(160%)",
           WebkitBackdropFilter: "blur(24px) saturate(160%)",
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.06)"}`,
-          boxShadow: isDark
-            ? "0 4px 32px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)"
-            : "0 4px 32px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.7)",
-          transition: "background 0.5s, border-color 0.5s, box-shadow 0.5s",
+          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+          transition: "background 0.5s, border-color 0.5s",
         }}
       >
         {/* Logo */}
@@ -106,7 +101,7 @@ export default function Navbar() {
           <span
             style={{
               fontSize: "14px",
-              fontWeight: 650,
+              fontWeight: 600,
               color: "var(--ink)",
               letterSpacing: "-0.02em",
               whiteSpace: "nowrap",
@@ -243,6 +238,7 @@ export default function Navbar() {
 
           <a
             href="#analyze-section"
+            className="btn-roll"
             onClick={(e) => {
               e.preventDefault();
               document.querySelector("#analyze-section")?.scrollIntoView({ behavior: "smooth" });
@@ -270,7 +266,7 @@ export default function Navbar() {
               e.currentTarget.style.opacity = "1";
             }}
           >
-            Try Sense
+            <RollText>Try Sense</RollText>
           </a>
         </div>
       </div>

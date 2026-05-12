@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { FileText, Receipt, ClipboardList, BarChart3, PenTool, FolderOpen, Shield, Briefcase, Wrench, LucideIcon } from "lucide-react";
 import { useScroll, useTransform, useSpring, motion, MotionValue } from "framer-motion";
+import RollText from "@/components/RollText";
 
 const ICONS: Array<{ x: number; y: number; rot: number; scatterScale: number; Icon: LucideIcon }> = [
   { x: -520, y: -260, rot: -18, scatterScale: 0.92, Icon: FileText },
@@ -40,15 +41,13 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
 
   const sDrift = i * 0.005;
 
-  // 0-0.10: fade in scattered
-  // 0.10-0.22: dwell
-  // 0.22-0.48: fly to grid
-  const entryOpacity = useTransform(progress, [0.0, 0.12 + sDrift], [0, 1]);
-  const morphStart = 0.22 + sDrift;
-  const morphEnd = 0.48 + sDrift;
-
-  // Glyphs stay fully opaque through the whole morph — final 3×3 grid reads
-  // as crisp icons rather than blank tiles.
+  // progress 0 = section just entered bottom of viewport
+  // progress 1 = section exited top of viewport
+  // entry fade 0 → 0.15, dwell 0.15 → 0.30, fly to grid 0.30 → 0.55,
+  // hold final state through 1.
+  const entryOpacity = useTransform(progress, [0.0, 0.15 + sDrift], [0, 1]);
+  const morphStart = 0.30 + sDrift;
+  const morphEnd = 0.55 + sDrift;
   const iconOpacity = useTransform(progress, [0, 1], [1, 1]);
 
   const xRaw = useTransform(progress, [morphStart, morphEnd], [from.x, to.x]);
@@ -56,7 +55,7 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
   const rotRaw = useTransform(progress, [morphStart, morphEnd], [from.rot, 0]);
   const scaleRaw = useTransform(
     progress,
-    [0.0, 0.08, morphStart, morphEnd],
+    [0.0, 0.1, morphStart, morphEnd],
     [scatterScale * 0.7, scatterScale, scatterScale, 1]
   );
 
@@ -177,37 +176,39 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
 }
 
 export default function DocsAnimation() {
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
+  // Drive icon choreography from the section's own scroll progress.
+  // 0 = section's top just hit the viewport bottom; 1 = section's bottom
+  // just left the viewport top. Animation runs while the section is on
+  // screen; the icons land in the final grid by the time the section is
+  // centred and stay there as the user scrolls past.
   const { scrollYProgress } = useScroll({
-    target: wrapperRef,
-    offset: ["start start", "end end"],
+    target: sectionRef,
+    offset: ["start end", "end start"],
   });
 
-  const auroraOpacity = useTransform(scrollYProgress, [0.0, 0.12, 0.25, 0.48, 1], [0, 0.85, 0.7, 0.55, 0.55]);
-  const auroraY = useTransform(scrollYProgress, [0, 1], ["-8%", "8%"]);
-  const grainOpacity = useTransform(scrollYProgress, [0.0, 0.12, 0.40, 0.9], [0, 0.25, 0, 0]);
-
-  const headlineOpacity = useTransform(scrollYProgress, [0.38, 0.50], [0, 1]);
-  const headlineY = useTransform(scrollYProgress, [0.38, 0.50], [24, 0]);
+  const auroraOpacity = 0.6;
+  const auroraY = 0;
+  const grainOpacity = 0;
 
   return (
     <div
       id="docs-section"
-      ref={wrapperRef}
-      style={{ position: "relative", height: "300vh" }}
+      ref={sectionRef}
+      style={{ position: "relative" }}
     >
       <section
         style={{
-          position: "sticky",
-          top: 0,
-          height: "100vh",
+          position: "relative",
+          minHeight: "100vh",
           background: "var(--bg)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
+          padding: "120px 0",
         }}
       >
         {/* Aurora */}
@@ -269,47 +270,81 @@ export default function DocsAnimation() {
           <rect width="100%" height="100%" filter="url(#docs-grain-fx)" />
         </motion.svg>
 
-        {/* Icons container — absolute full viewport, centered anchor */}
+        {/* Split layout — Sense logo formation on the left, copy + CTA
+            on the right. Both columns sit on top of the aurora/grain
+            backdrop layers. */}
         <div
           style={{
-            position: "absolute",
-            inset: 0,
+            position: "relative",
             zIndex: 3,
-            display: "flex",
+            width: "100%",
+            maxWidth: "1240px",
+            padding: "0 48px",
+            margin: "0 auto",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
             alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "none",
+            gap: "48px",
           }}
         >
-          <div style={{ position: "relative", width: 0, height: 0, transform: "translateY(-180px)" }}>
-            {ICONS.map((_, i) => (
-              <FlyingDoc
-                key={i}
-                i={i}
-                progress={scrollYProgress}
-              />
-            ))}
+          {/* Left — icons formation anchor */}
+          <div
+            style={{
+              position: "relative",
+              height: "520px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none",
+            }}
+          >
+            <div style={{ position: "relative", width: 0, height: 0 }}>
+              {ICONS.map((_, i) => (
+                <FlyingDoc key={i} i={i} progress={scrollYProgress} />
+              ))}
+            </div>
+          </div>
+
+          {/* Right — title + button */}
+          <div
+            style={{
+              position: "relative",
+              zIndex: 5,
+            }}
+          >
+            <h2 style={{ fontSize: "clamp(32px, 4.4vw, 56px)", fontWeight: 600, letterSpacing: "-0.04em", color: "var(--ink)", lineHeight: 1.05, marginBottom: "16px", maxWidth: "560px" }}>
+              Entire Zuper inside a prompt box.
+            </h2>
+            <p style={{ fontSize: "17px", color: "var(--ink2)", maxWidth: "480px", lineHeight: 1.6, marginBottom: "28px" }}>
+              Quotes, invoices, work orders, contracts — Sense ingests it all and turns it into answers you can act on.
+            </p>
+            <a
+              href="#analyze-section"
+              className="btn-roll"
+              onClick={(e) => {
+                e.preventDefault();
+                document.querySelector("#analyze-section")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "14px 28px",
+                borderRadius: "999px",
+                background: "#ffffff",
+                color: "#111",
+                fontSize: "15px",
+                fontWeight: 500,
+                letterSpacing: "-0.005em",
+                textDecoration: "none",
+                boxShadow: "0 6px 24px rgba(232,93,58,0.25), 0 2px 8px rgba(0,0,0,0.3)",
+                pointerEvents: "auto",
+              }}
+            >
+              <RollText>Try Sense</RollText>
+            </a>
           </div>
         </div>
-
-        {/* Headline */}
-        <motion.div
-          style={{
-            textAlign: "center",
-            opacity: headlineOpacity,
-            y: headlineY,
-            position: "relative",
-            zIndex: 5,
-            marginTop: "340px",
-          }}
-        >
-          <h2 style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 700, letterSpacing: "-0.04em", color: "var(--ink)", lineHeight: 1.1, marginBottom: "12px", maxWidth: "640px", marginLeft: "auto", marginRight: "auto" }}>
-            Entire Zuper inside a prompt box.
-          </h2>
-          <p style={{ fontSize: "16px", color: "var(--ink2)", maxWidth: "440px", margin: "0 auto", lineHeight: 1.6 }}>
-            Quotes, invoices, work orders, contracts — Sense ingests it all and turns it into answers you can act on.
-          </p>
-        </motion.div>
       </section>
     </div>
   );

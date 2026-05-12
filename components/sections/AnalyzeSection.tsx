@@ -11,7 +11,7 @@ import ScrollFloat from "@/components/ScrollFloat";
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
-import { Sparkles, CheckCircle2, Loader2, Phone, Mail, MessageSquare, Zap } from "lucide-react";
+import { Sparkles, CheckCircle2, Loader2, Phone, Mail, MessageSquare, Zap, AlertTriangle, Lightbulb } from "lucide-react";
 import { useDeployedTopic, type DeployTopic } from "@/components/TopicContext";
 import {
   Chart as ChartJS,
@@ -41,13 +41,13 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
         pointerEvents: "none",
         zIndex: 0,
         overflow: "hidden",
-        transform: `translateY(${parallax + 35}px)`,
+        transform: `translateY(${parallax + 80}px)`,
         willChange: "transform",
       }}
     >
       <div
         style={{
-          width: "min(1240px, 94%)",
+          width: "min(1000px, 78%)",
           position: "relative",
           opacity: revealed ? 1 : 0,
           transform: revealed
@@ -341,14 +341,35 @@ export default function AnalyzeSection() {
   const isActive = (own: "ask" | "analyze" | "act") => own === view;
   const slideTransition = "transform 760ms cubic-bezier(0.65, 0, 0.35, 1), opacity 600ms cubic-bezier(0.65, 0, 0.35, 1)";
 
+  // Suppress opacity/transform transitions on first paint so that the
+  // brief setView("act") fired by ScrollTrigger.onUpdate (before
+  // ScrollReset has run window.scrollTo(0,0) on a reload that browser
+  // restored deep into the section) doesn't fade the act overlay in
+  // and back out — exactly the "act agent card flashes for ~1s on
+  // reload" symptom. After the first paint, transitions are enabled.
+  const [transitionsReady, setTransitionsReady] = useState(false);
+  useEffect(() => {
+    let r2 = 0;
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => setTransitionsReady(true));
+    });
+    return () => {
+      cancelAnimationFrame(r1);
+      if (r2) cancelAnimationFrame(r2);
+    };
+  }, []);
+  const viewTransition = transitionsReady ? slideTransition : "none";
+
   // Auto-click choreography. Triggers when all stepper items have
   // completed: cursor flies in (560ms), presses (180ms), then the button
   // flips to the green confirmation and the cursor fades out.
+  // cursorPhase is intentionally NOT a dep — including it caused this
+  // effect to re-run and cancel its own pending timers as soon as t1
+  // flipped phase to "moving", so the green confirmation never landed.
   useEffect(() => {
     if (view !== "act") return;
     const total = ACT_VARIANTS[deployedTopic].steps.length;
     if (actCompleted.length !== total) return;
-    if (cursorPhase !== "hidden") return;
     const t1 = setTimeout(() => setCursorPhase("moving"), 380);
     const t2 = setTimeout(() => setCursorPhase("pressed"), 380 + 620);
     const t3 = setTimeout(() => {
@@ -362,11 +383,20 @@ export default function AnalyzeSection() {
       clearTimeout(t3);
       clearTimeout(t4);
     };
-  }, [actCompleted, view, deployedTopic, cursorPhase]);
+  }, [actCompleted, view, deployedTopic]);
 
   // Run the Act stepper sequence whenever view enters "act".
+  // Reset all act state when leaving so a re-entry (forward OR from
+  // scroll-up back through analyze) replays cleanly from the top.
   useEffect(() => {
-    if (view !== "act") return;
+    if (view !== "act") {
+      setActCompleted([]);
+      setActActive(-1);
+      setRadarAdded(false);
+      setRadarHidden(false);
+      setCursorPhase("hidden");
+      return;
+    }
     setActCompleted([]);
     setActActive(-1);
     setRadarAdded(false);
@@ -374,9 +404,14 @@ export default function AnalyzeSection() {
     setCursorPhase("hidden");
     const variant = ACT_VARIANTS[deployedTopic];
     const timers: ReturnType<typeof setTimeout>[] = [];
+    // Whole 5-step sequence runs in ~2s. Each step gets an equal slice
+    // (totalMs / count); it activates at the slice start and checks off
+    // at the slice end so the last item lands right at 2000ms.
+    const totalMs = 2000;
+    const stride = totalMs / variant.steps.length;
     variant.steps.forEach((_, i) => {
-      timers.push(setTimeout(() => setActActive(i), i * 720));
-      timers.push(setTimeout(() => setActCompleted((p) => [...p, i]), i * 720 + 540));
+      timers.push(setTimeout(() => setActActive(i), i * stride));
+      timers.push(setTimeout(() => setActCompleted((p) => [...p, i]), (i + 1) * stride));
     });
     return () => timers.forEach(clearTimeout);
   }, [view, deployedTopic]);
@@ -395,41 +430,60 @@ export default function AnalyzeSection() {
     }
   }, [aiDone]);
 
-  // Auto-deploy: once the chart has rendered for the picked prompt, slide
-  // straight to the Act view + suggested agent. No button click required.
-  useEffect(() => {
-    if (!showChart || !topic) return;
-    const t = setTimeout(() => {
-      setDeployedTopic(topic);
-      setView("act");
-    }, 2200);
-    return () => clearTimeout(t);
-  }, [showChart, topic, setDeployedTopic]);
-
   const hasTriggered = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
   const askRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<ScrollTrigger | null>(null);
 
-  // Pin the Ask block through Ask → Analyze → Act. 130% is enough to
-  // cover the arming + typing + analyze→act sequence without leaving
-  // dead scroll after the Act animations land. The moment the user
-  // scrolls past the pin, RadarSection's target slot enters view and
-  // the live-activity card immediately takes flight into the dashboard.
+  // Scroll-driven view: pin spans full Ask → Analyze → Act and
+  // ScrollTrigger.onUpdate maps scroll progress to the active view.
   useGSAP(() => {
     if (!askRef.current) return;
     const trigger = ScrollTrigger.create({
       trigger: askRef.current,
       start: "top top",
-      end: "+=80%",
+      end: "+=240%",
       pin: true,
       pinSpacing: true,
       anticipatePin: 1,
       invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        const p = self.progress;
+        const next: "ask" | "analyze" | "act" =
+          p < 0.34 ? "ask" : p < 0.67 ? "analyze" : "act";
+        setView((prev) => (prev === next ? prev : next));
+      },
     });
+    triggerRef.current = trigger;
     return () => {
       trigger.kill();
+      triggerRef.current = null;
     };
   }, { scope: sectionRef });
+
+  // Stage setup driven by scroll-derived view. Replaces the old
+  // auto-deploy timer — entering analyze fires the typewriter, entering
+  // act sets the deployed topic, returning to ask resets.
+  useEffect(() => {
+    if (view === "ask") {
+      setShowQuestion(false);
+      setShowAiResponse(false);
+      setShowChart(false);
+      return;
+    }
+    if (view === "analyze") {
+      setTopic((prev) => prev ?? "revenue");
+      const t1 = setTimeout(() => setShowQuestion(true), 80);
+      const t2 = setTimeout(() => setShowAiResponse(true), 300);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+    if (view === "act") {
+      setDeployedTopic((topic ?? "revenue") as DeployTopic);
+    }
+  }, [view, topic, setDeployedTopic]);
   const [askProgress, setAskProgress] = useState(0);
   const [backdropRevealed, setBackdropRevealed] = useState(false);
 
@@ -463,15 +517,17 @@ export default function AnalyzeSection() {
   const parallaxOffset = (askProgress - 0.5) * -50;
 
   const [selectedIdx, setSelectedIdx] = useState(0);
+  // Chip click acts as a shortcut: picks the topic and scrolls the page
+  // forward into the Analyze phase so scroll-driven view catches up.
   const triggerTopic = (t: Topic) => {
-    setShowQuestion(false);
-    setShowAiResponse(false);
     setShowChart(false);
     setTopic(t);
     setSelectedIdx(0);
-    setView("analyze");
-    setTimeout(() => setShowQuestion(true), 100);
-    setTimeout(() => setShowAiResponse(true), 350);
+    const trig = triggerRef.current;
+    if (trig) {
+      const target = trig.start + (trig.end - trig.start) * 0.4;
+      window.scrollTo({ top: target, behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
@@ -498,7 +554,7 @@ export default function AnalyzeSection() {
     <section
       id="analyze-section"
       ref={sectionRef}
-      style={{ background: "var(--bg)", padding: "0 24px", position: "relative" }}
+      style={{ background: "var(--bg)", padding: "0 24px", position: "relative", marginTop: "-2px" }}
     >
       {/* Automatic stepper — outside the Mac window, sticky to the
           viewport so it stays visible across the entire Ask → Analyze
@@ -508,8 +564,8 @@ export default function AnalyzeSection() {
         aria-hidden
         style={{
           position: "sticky",
-          top: "32px",
-          zIndex: 5,
+          top: "104px",
+          zIndex: 50,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -586,7 +642,7 @@ export default function AnalyzeSection() {
                   <span
                     style={{
                       fontSize: "15px",
-                      fontWeight: isActive ? 650 : 500,
+                      fontWeight: isActive ? 600 : 500,
                       letterSpacing: "0.06em",
                       textTransform: "uppercase",
                       color: isActive ? "#FFFFFF" : isPast ? "var(--ink2)" : "var(--ink3)",
@@ -634,7 +690,7 @@ export default function AnalyzeSection() {
             transition:
               view === "ask" && askProgress < 1
                 ? "none"
-                : slideTransition,
+                : viewTransition,
           }}
         >
           <div>
@@ -648,6 +704,7 @@ export default function AnalyzeSection() {
         style={{
           position: "absolute",
           inset: 0,
+          paddingTop: "160px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -655,10 +712,10 @@ export default function AnalyzeSection() {
           opacity: isActive("analyze") ? 1 : 0,
           transform: `translateY(${offsetFor("analyze")}%)`,
           pointerEvents: view === "analyze" ? "auto" : "none",
-          transition: slideTransition,
+          transition: viewTransition,
         }}
       >
-        <div style={{ width: "min(1240px, 94vw)", height: "min(868px, 65.8vw)", maxHeight: "88vh", position: "relative" }}>
+        <div style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
         <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
         {/* Chat conversation */}
         {topic && (
@@ -782,7 +839,7 @@ export default function AnalyzeSection() {
                         {missedCallKpis.map((k) => (
                           <div key={k.label} style={{ background: "var(--surface)", padding: "12px 16px" }}>
                             <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
-                            <div style={{ fontSize: "22px", fontWeight: 700, color: k.accent || "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
+                            <div style={{ fontSize: "22px", fontWeight: 600, color: k.accent || "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
                           </div>
                         ))}
                       </div>
@@ -820,7 +877,7 @@ export default function AnalyzeSection() {
 
                       {/* Insight callout */}
                       <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "#FCA5A5", lineHeight: 1.55 }}>
-                        <span style={{ fontSize: "16px", lineHeight: 1.2 }}>⚠️</span>
+                        <AlertTriangle className="w-3.5 h-3.5" style={{ flexShrink: 0, marginTop: "2px" }} />
                         <span>
                           <strong>The storm caller is the priority.</strong> Same zip code as Tuesday&apos;s hail report and they&apos;re calling a competitor next if no one picks up.
                         </span>
@@ -866,7 +923,7 @@ export default function AnalyzeSection() {
 
                       {/* Insight callout */}
                       <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "#FCA5A5", lineHeight: 1.55 }}>
-                        <span style={{ fontSize: "16px", lineHeight: 1.2 }}>⚠️</span>
+                        <AlertTriangle className="w-3.5 h-3.5" style={{ flexShrink: 0, marginTop: "2px" }} />
                         <span>
                           <strong>State Farm is the biggest exposure.</strong> 3 of the 7 claims sit with one adjuster.
                         </span>
@@ -883,7 +940,7 @@ export default function AnalyzeSection() {
                         {estimateKpis.map((k) => (
                           <div key={k.label} style={{ background: "var(--surface)", padding: "12px 16px" }}>
                             <div style={{ fontSize: "10px", color: "var(--ink2)", letterSpacing: "0.08em", marginBottom: "6px" }}>{k.label}</div>
-                            <div style={{ fontSize: "22px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
+                            <div style={{ fontSize: "22px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
                           </div>
                         ))}
                       </div>
@@ -915,7 +972,7 @@ export default function AnalyzeSection() {
 
                       {/* Insight callout */}
                       <div style={{ background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.22)", borderRadius: "12px", padding: "10px 14px", display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px", color: "rgba(255,196,170,0.95)", lineHeight: 1.55 }}>
-                        <span style={{ fontSize: "16px", lineHeight: 1.2 }}>💡</span>
+                        <Lightbulb className="w-3.5 h-3.5" style={{ flexShrink: 0, marginTop: "2px" }} />
                         <span>
                           Estimates this size close <strong>3× more often</strong> when re-engaged in the first 2 weeks.
                         </span>
@@ -944,6 +1001,7 @@ export default function AnalyzeSection() {
         style={{
           position: "absolute",
           inset: 0,
+          paddingTop: "160px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -951,15 +1009,15 @@ export default function AnalyzeSection() {
           opacity: isActive("act") ? 1 : 0,
           transform: `translateY(${offsetFor("act")}%)`,
           pointerEvents: view === "act" ? "auto" : "none",
-          transition: slideTransition,
+          transition: viewTransition,
         }}
       >
-        <div style={{ width: "min(1240px, 94vw)", height: "min(868px, 65.8vw)", maxHeight: "88vh", position: "relative" }}>
+        <div style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
         {/* overflow: visible so the live activity card can transform
             out of the mac frame on its way to the radar section without
             being clipped at the frame edge. */}
         <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "visible", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "12px" }}>
             {/* Agent + steps */}
             <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "14px" }}>
@@ -1022,7 +1080,7 @@ export default function AnalyzeSection() {
                 RadarSection's scroll-driven transform can move THIS card
                 (the only one) into a placeholder slot in the next
                 section as the user scrolls. */}
-            <div id="live-activity-source" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none", willChange: "transform", transformOrigin: "0 0" }}>
+            <div id="live-activity-source" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none", willChange: "transform", transformOrigin: "center center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                 <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px #22C55E" }} />
                 <span style={{ fontSize: "10px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{ACT_VARIANTS[deployedTopic].agent.name} · Live activity</span>
@@ -1199,7 +1257,7 @@ export default function AnalyzeSection() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
               {ACT_VARIANTS[deployedTopic].recap.map((r) => (
                 <div key={r.label} style={{ background: "rgba(34,197,94,0.06)", borderRadius: "10px", padding: "10px", textAlign: "center" }}>
-                  <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--green)", letterSpacing: "-0.02em" }}>{r.value}</div>
+                  <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--green)", letterSpacing: "-0.02em" }}>{r.value}</div>
                   <div style={{ fontSize: "10px", color: "#86EFAC", marginTop: "2px" }}>{r.label}</div>
                 </div>
               ))}

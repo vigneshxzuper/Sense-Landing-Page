@@ -34,7 +34,7 @@ function QuoteCard({ text }: { text: string }) {
         flexShrink: 0,
         width: "min(420px, 78vw)",
         padding: "28px 28px 26px",
-        borderRadius: "18px",
+        borderRadius: "14px",
         background: "var(--card-bg)",
         border: "1px solid var(--card-border)",
         boxShadow: "0 24px 60px -28px rgba(0,0,0,0.55)",
@@ -154,7 +154,7 @@ export default function TestimonialsSection() {
         <h2
           style={{
             fontSize: "clamp(28px, 4vw, 56px)",
-            fontWeight: 700,
+            fontWeight: 600,
             letterSpacing: "-0.04em",
             lineHeight: 1.1,
             color: "var(--ink)",

@@ -177,6 +177,67 @@ a, button { cursor: pointer; }
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
+/* Spinning conic-gradient halo around hero CTA pills. Same animation
+   as the static HeroSection so the active scroll hero matches. */
+@property --angle-p {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@property --angle-s {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes btn-spin-p { to { --angle-p: 360deg; } }
+@keyframes btn-spin-s { to { --angle-s: 360deg; } }
+.btn-glow-primary {
+  background: conic-gradient(from var(--angle-p), transparent 0%, transparent 50%, rgba(251,146,60,1) 68%, rgba(255,220,180,1) 80%, rgba(251,146,60,1) 92%, transparent 100%);
+  animation: btn-spin-p 2.5s linear infinite;
+}
+.btn-glow-secondary {
+  background: conic-gradient(from var(--angle-s), transparent 0%, transparent 70%, rgba(180,180,180,0.25) 82%, rgba(220,220,220,0.3) 88%, rgba(180,180,180,0.25) 94%, transparent 100%);
+  animation: btn-spin-s 4s linear infinite;
+}
+.hero-cta-anim:hover { transform: translateY(-1px); }
+.hero-cta-anim:active { transform: translateY(0); }
+
+/* Per-letter slot-roll on hover — each character is a fixed-height slot
+   containing two copies of the same letter stacked vertically. Parent
+   .btn-roll on hover translates the inner stack up by one line so the
+   second copy takes the visible slot. transitionDelay is applied per
+   letter inline to stagger the roll. */
+.cta-roll-word {
+  display: inline-flex;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+.cta-roll {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  height: 1.2em;
+  line-height: 1.2;
+  min-height: 0;
+  flex: 0 0 auto;
+  vertical-align: middle;
+}
+.cta-roll-inner {
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+  will-change: transform;
+}
+.cta-roll-line {
+  display: block;
+  height: 1.2em;
+  line-height: 1.2;
+  white-space: pre;
+}
+.btn-roll:hover .cta-roll-inner,
+.hero-cta:hover .cta-roll-inner {
+  transform: translateY(-1.2em);
+}
+
 /* CRT glitch — RGB-split + brightness flicker. Hits twice in a 3s cycle:
    a small mid-cycle blip and a larger end-of-cycle burst.
    Touches ONLY text-shadow + filter — never opacity — so GSAP's

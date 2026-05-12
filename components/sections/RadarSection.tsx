@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { AlertTriangle, Clock, FileText, Users, DollarSign, TrendingUp, TrendingDown, BarChart3, Activity, Wrench, MapPin, CalendarDays, Phone, HardHat } from "lucide-react";
+import { AlertTriangle, Clock, FileText, Users, BarChart3, Wrench, MapPin, CalendarDays, Phone, HardHat } from "lucide-react";
 import ScrollFloat from "@/components/ScrollFloat";
 
 if (typeof window !== "undefined") {
@@ -16,13 +16,6 @@ const ALERT_CARDS = [
   { icon: Clock, label: "Dormant estimates", value: "12", sub: "$318,000 aging out", detail: "No touch in 10+ days. Sales Coach Agent is ready.", color: "#FCA5A5", bg: "linear-gradient(160deg, rgba(239,68,68,0.14) 0%, var(--surface2) 100%)", border: "rgba(239,68,68,0.30)", glow: "rgba(239,68,68,0.25)" },
   { icon: AlertTriangle, label: "Unsent invoices", value: "9", sub: "$87,450 in completed work", detail: "Jobs closed out. Invoices never went.", color: "#F5A788", bg: "linear-gradient(160deg, rgba(232,93,58,0.14) 0%, var(--surface2) 100%)", border: "rgba(232,93,58,0.30)", glow: "rgba(232,93,58,0.25)" },
   { icon: Phone, label: "Missed calls", value: "11", sub: "3 urgent", detail: "CSR Agent has cleared 9 of them since this morning.", color: "#C4B5FD", bg: "linear-gradient(160deg, rgba(139,92,246,0.14) 0%, var(--surface2) 100%)", border: "rgba(139,92,246,0.30)", glow: "rgba(139,92,246,0.25)" },
-];
-
-const KPI_CARDS = [
-  { label: "Pipeline value", value: "$1.82M", change: "+9.4%", up: true, icon: DollarSign, accent: "#22C55E", tint: "rgba(34,197,94,0.12)", glow: "rgba(34,197,94,0.28)" },
-  { label: "Jobs in production", value: "31", change: "+4", up: true, icon: Wrench, accent: "#38BDF8", tint: "rgba(56,189,248,0.12)", glow: "rgba(56,189,248,0.28)" },
-  { label: "Open supplements", value: "18", change: "+3", up: false, icon: FileText, accent: "#A78BFA", tint: "rgba(167,139,250,0.12)", glow: "rgba(167,139,250,0.28)" },
-  { label: "Same-day close rate", value: "54%", change: "+6 pts", up: true, icon: Activity, accent: "#F59E0B", tint: "rgba(245,158,11,0.12)", glow: "rgba(245,158,11,0.28)" },
 ];
 
 const RECEIVABLES_BUCKETS = [
@@ -71,8 +64,12 @@ export default function RadarSection() {
     // a soft inhabited feel without lagging behind input perceptibly.
     let currentDx = 0;
     let currentDy = 0;
+    let currentScale = 1;
     let active = false;
     let rafId = 0;
+
+    // Centre-origin so scale doesn't shift the centre we just lerped to.
+    source.style.transformOrigin = "center center";
 
     const computeDesired = () => {
       // Strip our inline transform momentarily so getBoundingClientRect
@@ -92,6 +89,12 @@ export default function RadarSection() {
         x: tRect.left + tRect.width / 2,
         y: tRect.top + tRect.height / 2,
       };
+      // Uniform scale so text/icons don't distort. The Mac-frame grid
+      // is tuned so the source card's natural width ≈ target slot width,
+      // making scale ≈ 1 with the size mismatch under a couple percent.
+      const scaleW = baseRect.width > 0 ? tRect.width / baseRect.width : 1;
+      const scaleH = baseRect.height > 0 ? tRect.height / baseRect.height : 1;
+      const desiredScaleTarget = Math.min(scaleW, scaleH);
       const vpCenter = {
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
@@ -123,8 +126,10 @@ export default function RadarSection() {
       // scroll range that drives the flight, so the card travels slower
       // than the scroll for a more cinematic, deliberate arrival.
       let desiredCenter: { x: number; y: number };
+      let desiredScale: number;
       if (analyzeBottom >= window.innerHeight) {
         desiredCenter = baseCenter;
+        desiredScale = 1;
         active = false;
       } else {
         const rawP = clamp01(
@@ -135,6 +140,7 @@ export default function RadarSection() {
           x: lerp(baseCenter.x, tCenter.x, p),
           y: lerp(baseCenter.y, tCenter.y, p),
         };
+        desiredScale = lerp(1, desiredScaleTarget, p);
         active = rawP > 0;
       }
       void vpCenter; // retained for future tuning, intentionally unused
@@ -142,6 +148,7 @@ export default function RadarSection() {
       return {
         dx: desiredCenter.x - baseCenter.x,
         dy: desiredCenter.y - baseCenter.y,
+        scale: desiredScale,
       };
     };
 
@@ -151,13 +158,15 @@ export default function RadarSection() {
     // flight reads as a deliberate handoff rather than a snap.
     const LERP = 0.055;
     const tick = () => {
-      const { dx, dy } = computeDesired();
+      const { dx, dy, scale } = computeDesired();
       currentDx += (dx - currentDx) * LERP;
       currentDy += (dy - currentDy) * LERP;
+      currentScale += (scale - currentScale) * LERP;
       // Snap when close enough so we don't churn forever.
       if (Math.abs(dx - currentDx) < 0.05) currentDx = dx;
       if (Math.abs(dy - currentDy) < 0.05) currentDy = dy;
-      source.style.transform = `translate3d(${currentDx}px, ${currentDy}px, 0)`;
+      if (Math.abs(scale - currentScale) < 0.001) currentScale = scale;
+      source.style.transform = `translate3d(${currentDx}px, ${currentDy}px, 0) scale(${currentScale})`;
       source.style.zIndex = active ? "20" : "";
       rafId = requestAnimationFrame(tick);
     };
@@ -167,6 +176,7 @@ export default function RadarSection() {
       cancelAnimationFrame(rafId);
       source.style.transform = "";
       source.style.zIndex = "";
+      source.style.transformOrigin = "";
     };
   }, { scope: sectionRef });
 
@@ -250,7 +260,7 @@ export default function RadarSection() {
   });
 
   return (
-    <section id="radar-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "60px 24px 120px", minHeight: "100vh", overflow: "hidden" }}>
+    <section id="radar-section" ref={sectionRef} style={{ background: "var(--bg)", padding: "120px 24px 140px", minHeight: "100vh", overflow: "hidden" }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ marginBottom: "60px" }}>
         </div>
@@ -260,7 +270,7 @@ export default function RadarSection() {
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(232,93,58,0.08)", border: "1px solid rgba(232,93,58,0.2)", borderRadius: "100px", padding: "5px 14px", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "20px" }}>
             Task Radar
           </div>
-          <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "8px" }}>
+          <ScrollFloat as="h2" style={{ fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1.1, color: "var(--ink)", marginBottom: "8px" }}>
             Your dashboard is whatever you ask for.
           </ScrollFloat>
           <p style={{ fontSize: "16px", color: "var(--ink3)", maxWidth: "560px" }}>
@@ -307,36 +317,6 @@ export default function RadarSection() {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* KPI row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "16px" }}>
-          {KPI_CARDS.map((k, i) => (
-            <div
-              key={k.label}
-              style={{
-                ...card,
-                background: "var(--card-bg)",
-                border: "1px solid var(--card-border)",
-                boxShadow: "none",
-                position: "relative",
-                overflow: "hidden",
-                ...stagger(i),
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{k.label}</span>
-                <div style={{ width: "26px", height: "26px", borderRadius: "7px", background: `${k.accent}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <k.icon className="w-3.5 h-3.5" style={{ color: k.accent, opacity: 0.9 }} />
-                </div>
-              </div>
-              <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.03em" }}>{k.value}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "4px" }}>
-                {k.up ? <TrendingUp className="w-3 h-3 text-[#22C55E]" /> : <TrendingDown className="w-3 h-3 text-[#EF4444]" />}
-                <span style={{ fontSize: "12px", color: k.up ? "#22C55E" : "#EF4444" }}>{k.change}</span>
-              </div>
-            </div>
-          ))}
         </div>
 
         {/* Alert cards row — with grab & drag rearrange */}
@@ -408,7 +388,7 @@ export default function RadarSection() {
                 <a.icon className="w-4 h-4" style={{ color: a.color }} />
                 <span style={{ fontSize: "13px", fontWeight: 600, color: a.color }}>{a.label}</span>
               </div>
-              <div style={{ fontSize: "32px", fontWeight: 700, color: a.color, letterSpacing: "-0.03em", marginBottom: "4px" }}>{a.value}</div>
+              <div style={{ fontSize: "32px", fontWeight: 600, color: a.color, letterSpacing: "-0.03em", marginBottom: "4px" }}>{a.value}</div>
               <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "2px" }}>{a.sub}</div>
               <div style={{ fontSize: "11px", color: "var(--ink3)" }}>{a.detail}</div>
             </div>
@@ -426,7 +406,7 @@ export default function RadarSection() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
               <div>
                 <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Revenue MTD vs. target</div>
-                <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.03em", marginTop: "2px" }}>$612,400</div>
+                <div style={{ fontSize: "24px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.03em", marginTop: "2px" }}>$612,400</div>
               </div>
               <span style={{ fontSize: "12px", color: "var(--green)", background: "rgba(34,197,94,0.1)", padding: "3px 8px", borderRadius: "6px" }}>+$52K</span>
             </div>

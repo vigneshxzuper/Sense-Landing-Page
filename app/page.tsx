@@ -15,9 +15,9 @@ export default function Page() {
         <AnalyzeSection />
         {/* ActSection now lives inside AnalyzeSection's Mac window */}
         <RadarSection />
-        <DocsAnimation />
         <AnywhereSection />
         <TestimonialsSection />
+        <DocsAnimation />
         <Footer />
       </main>
     </TopicProvider>

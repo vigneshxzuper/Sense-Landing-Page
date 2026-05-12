@@ -1,6 +1,7 @@
 "use client";
 
 import TypewriterOnce from "@/components/TypewriterOnce";
+import RollText from "@/components/RollText";
 
 /**
  * HeroScrollAnimation
@@ -637,11 +638,18 @@ export default function HeroScrollAnimation() {
           ref={blindsBgRef}
           style={{
             position: "absolute",
-            inset: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: "6px",
             zIndex: 5,
             pointerEvents: "none",
             opacity: 0,
             willChange: "opacity, transform",
+            maskImage:
+              "linear-gradient(180deg, #000 0%, #000 96%, rgba(0,0,0,0) 100%)",
+            WebkitMaskImage:
+              "linear-gradient(180deg, #000 0%, #000 96%, rgba(0,0,0,0) 100%)",
           }}
         >
           <GradientBlinds
@@ -716,7 +724,6 @@ export default function HeroScrollAnimation() {
               maxWidth: "1100px",
               color: "#FFFFFF",
               fontFeatureSettings: '"ss01", "cv11"',
-              textShadow: "0 1px 8px rgba(0,0,0,0.22)",
               minHeight: "calc(2em * 1.05)",
             }}
           >
@@ -735,53 +742,58 @@ export default function HeroScrollAnimation() {
             Type a question, get an answer, deploy an agent.
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "40px", pointerEvents: "auto" }}>
-            <a
-              href="#analyze-section"
-              onClick={(e) => {
-                e.preventDefault();
-                document.querySelector("#analyze-section")?.scrollIntoView({ behavior: "smooth" });
-              }}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "14px 32px",
-                borderRadius: "999px",
-                background: "#ffffff",
-                color: "#111",
-                fontSize: "16px",
-                fontWeight: 500,
-                letterSpacing: "-0.005em",
-                textDecoration: "none",
-                boxShadow:
-                  "0 6px 24px rgba(232,93,58,0.25), 0 2px 8px rgba(0,0,0,0.3)",
-              }}
-            >
-              Request early access
-            </a>
-            <a
-              href="#docs-section"
-              onClick={(e) => {
-                e.preventDefault();
-                document.querySelector("#docs-section")?.scrollIntoView({ behavior: "smooth" });
-              }}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "14px 32px",
-                borderRadius: "999px",
-                background: "rgba(20,20,20,0.9)",
-                color: "rgba(255,255,255,0.92)",
-                fontSize: "16px",
-                fontWeight: 500,
-                letterSpacing: "-0.005em",
-                textDecoration: "none",
-                border: "1px solid rgba(255,255,255,0.12)",
-              }}
-            >
-              Watch a demo
-            </a>
+            {[
+              {
+                label: "Request early access",
+                href: "#analyze-section",
+                primary: true,
+              },
+              {
+                label: "Watch a demo",
+                href: "#docs-section",
+                primary: false,
+              },
+            ].map((btn) => (
+              <div
+                key={btn.label}
+                className={btn.primary ? "hero-cta-anim btn-roll btn-glow-primary" : "hero-cta-anim btn-roll btn-glow-secondary"}
+                style={{
+                  position: "relative",
+                  display: "inline-flex",
+                  borderRadius: "999px",
+                  padding: "1.5px",
+                  boxShadow: btn.primary
+                    ? "0 6px 24px rgba(232,93,58,0.25), 0 2px 8px rgba(0,0,0,0.3)"
+                    : "none",
+                  transition: "transform 0.2s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s",
+                }}
+              >
+                <a
+                  href={btn.href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.querySelector(btn.href)?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "14px 32px",
+                    borderRadius: "999px",
+                    background: btn.primary ? "#ffffff" : "rgba(20,20,20,0.9)",
+                    color: btn.primary ? "#111" : "rgba(255,255,255,0.92)",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.005em",
+                    textDecoration: "none",
+                  }}
+                >
+                  <RollText>{btn.label}</RollText>
+                </a>
+              </div>
+            ))}
           </div>
         </div>
         </div>

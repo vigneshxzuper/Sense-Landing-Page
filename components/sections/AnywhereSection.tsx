@@ -136,7 +136,7 @@ export default function AnywhereSection() {
         <h2
           style={{
             fontSize: "clamp(28px, 4vw, 56px)",
-            fontWeight: 700,
+            fontWeight: 600,
             letterSpacing: "-0.04em",
             lineHeight: 1.1,
             color: "var(--ink)",
@@ -175,9 +175,9 @@ export default function AnywhereSection() {
           <div
             style={{
               position: "relative",
-              width: "min(960px, 74vw)",
+              width: "min(1180px, 86vw)",
               aspectRatio: "2000 / 1152",
-              maxHeight: "68vh",
+              maxHeight: "82vh",
             }}
           >
             {CARDS.map((card, i) => {
@@ -240,8 +240,8 @@ export default function AnywhereSection() {
                   <div
                     style={{
                       position: "absolute",
-                      inset: "2%",
-                      borderRadius: "10px",
+                      inset: "5%",
+                      borderRadius: "12px",
                       overflow: "hidden",
                       boxShadow: [
                         "0 28px 70px -22px rgba(0,0,0,0.75)",
