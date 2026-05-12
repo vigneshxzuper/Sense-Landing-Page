@@ -235,6 +235,10 @@ export default function HeroScrollAnimation() {
         futureTextRef.current,
         {
           scale: 1,
+          // 50% — centre of the hero viewport. The full block (badge,
+          // headline, subhead, buttons, chat) is anchored center-center
+          // so it lands in the dead middle of the hero with even space
+          // above and below.
           top: "50%",
           ease: "power2.inOut",
           duration: 0.55,
@@ -256,35 +260,44 @@ export default function HeroScrollAnimation() {
       gsap.set(swapBlueOffsetRef.current, { attr: { dx: 0 } });
       gsap.set(swapFlashRef.current, { opacity: 0, force3D: true });
 
-      const SWAP_START = 0.10;
+      // Wider, calmer swap window — biased toward a clean crossfade with
+      // only a whisper of glitch instead of an RGB-tear crescendo. This
+      // makes the retro → futuristic handoff feel seamless.
+      const SWAP_START = 0.06;
       const SWAP_PEAK  = 0.20; // glitch crescendo + crossfade midpoint
-      const SWAP_END   = 0.30;
+      const SWAP_END   = 0.34;
 
-      // Stripe-tear amplitude crescendo + decay around the peak.
-      tl.to(swapDisplaceRef.current, { attr: { scale: 36 }, ease: "power3.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
-      tl.to(swapDisplaceRef.current, { attr: { scale: 0 },  ease: "power4.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
+      // Subtle stripe-tear — short crescendo, fast decay; max scale 8
+      // (was 36) so the displacement reads as a soft shimmer rather than
+      // a hard tear.
+      tl.to(swapDisplaceRef.current, { attr: { scale: 8 }, ease: "power2.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
+      tl.to(swapDisplaceRef.current, { attr: { scale: 0 }, ease: "power3.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
 
-      tl.to(swapTurbRef.current, { attr: { baseFrequency: "0.0001 1.05" }, ease: "power3.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
-      tl.to(swapTurbRef.current, { attr: { baseFrequency: "0.0001 0.65" }, ease: "power4.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
+      tl.to(swapTurbRef.current, { attr: { baseFrequency: "0.0001 0.85" }, ease: "power2.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
+      tl.to(swapTurbRef.current, { attr: { baseFrequency: "0.0001 0.65" }, ease: "power3.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
 
-      // RGB chromatic split — peaks with the displacement, decays with it.
-      tl.to(swapRedOffsetRef.current,  { attr: { dx: 9  }, ease: "power3.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
-      tl.to(swapBlueOffsetRef.current, { attr: { dx: -9 }, ease: "power3.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
-      tl.to(swapRedOffsetRef.current,  { attr: { dx: 0  }, ease: "power4.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
-      tl.to(swapBlueOffsetRef.current, { attr: { dx: 0  }, ease: "power4.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
+      // Whisper of chromatic split — max dx 2 (was 9). Reads as a faint
+      // chromatic shimmer at the peak instead of a visible RGB break.
+      tl.to(swapRedOffsetRef.current,  { attr: { dx: 2  }, ease: "power2.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
+      tl.to(swapBlueOffsetRef.current, { attr: { dx: -2 }, ease: "power2.in",  duration: SWAP_PEAK - SWAP_START }, SWAP_START);
+      tl.to(swapRedOffsetRef.current,  { attr: { dx: 0  }, ease: "power3.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
+      tl.to(swapBlueOffsetRef.current, { attr: { dx: 0  }, ease: "power3.out", duration: SWAP_END  - SWAP_PEAK  }, SWAP_PEAK);
 
-      // Cyan-tinted flash hugs the peak, hinting at the new palette.
-      tl.to(swapFlashRef.current, { opacity: 0.55, ease: "power2.in",  duration: SWAP_PEAK - SWAP_START - 0.02 }, SWAP_START + 0.02);
+      // Soft flash — opacity peak dropped to 0.22 so the screen warms
+      // toward the new palette without washing out completely.
+      tl.to(swapFlashRef.current, { opacity: 0.22, ease: "power2.in",  duration: SWAP_PEAK - SWAP_START - 0.02 }, SWAP_START + 0.02);
       tl.to(swapFlashRef.current, { opacity: 0,    ease: "power2.out", duration: SWAP_END  - SWAP_PEAK  + 0.02 }, SWAP_PEAK);
 
-      // Computer crossfade spans the full swap window so even one-pixel
-      // scrubs interpolate cleanly between retro and modern frames.
+      // Long sine-ease crossfade over the entire (wider) swap window.
+      // The new image arrives gradually so the swap reads as the scene
+      // dissolving forward in time rather than a jump cut.
       tl.to(computerRetroRef.current,  { opacity: 0, ease: "sine.inOut", duration: SWAP_END - SWAP_START }, SWAP_START);
       tl.to(computerModernRef.current, { opacity: 1, ease: "sine.inOut", duration: SWAP_END - SWAP_START }, SWAP_START);
 
-      // Text crossfade — retro out at peak, future in just after.
-      tl.to(textRef.current,       { opacity: 0, ease: "power2.in",  duration: 0.05 }, SWAP_PEAK - 0.03);
-      tl.to(futureTextRef.current, { opacity: 1, ease: "power2.out", duration: 0.05 }, SWAP_PEAK + 0.04);
+      // Text crossfade — retro fades out gently on the up-ramp, future
+      // fades in on the down-ramp so neither pops in/out abruptly.
+      tl.to(textRef.current,       { opacity: 0, ease: "sine.inOut", duration: 0.10 }, SWAP_PEAK - 0.08);
+      tl.to(futureTextRef.current, { opacity: 1, ease: "sine.inOut", duration: 0.10 }, SWAP_PEAK + 0.02);
       // Gradient blinds bg only fades in AFTER the laptop zoom finishes
       // (zoom: 0.30 + 0.55 = 0.85). No scale anim — it's a fullscreen
       // backdrop that arrives once the headline has locked into place.
@@ -512,12 +525,14 @@ export default function HeroScrollAnimation() {
             />
           </div>
 
-          {/* Futuristic workspace (post-swap state). Same canvas + same
-              composition as retro, but the plant / laptop / pencil cup
-              all sit ~10–15% LOWER in this image's canvas than they do
-              in the retro canvas. Bumping objectPosition Y from 18% →
-              50% shifts the image up so the elements register near the
-              retro's slots and the swap doesn't look jumpy. */}
+          {/* Futuristic workspace (post-swap state). Same 1448×1086
+              canvas as retro, but the table-top line sits at ~65% of
+              this image's canvas (vs ~58% in retro) because of the
+              extra sky/cityscape on top. objectPosition Y=46% (vs the
+              retro's 18%) shifts the modern image down so the table
+              line, plant pot base, and pencil cup base register at the
+              SAME viewport Y as their retro counterparts — the crossfade
+              dissolves in place instead of jumping. */}
           <div
             ref={computerModernRef}
             style={{
@@ -533,7 +548,7 @@ export default function HeroScrollAnimation() {
               fill
               priority
               sizes="100vw"
-              style={{ objectFit: "cover", objectPosition: "center 50%" }}
+              style={{ objectFit: "cover", objectPosition: "center 46%" }}
             />
           </div>
 
@@ -698,9 +713,9 @@ export default function HeroScrollAnimation() {
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              padding: "7px 16px",
+              padding: "6px 14px",
               borderRadius: "999px",
-              marginBottom: "28px",
+              marginBottom: "24px",
               fontSize: "13px",
               fontWeight: 500,
               letterSpacing: "0.02em",
@@ -715,33 +730,33 @@ export default function HeroScrollAnimation() {
           </div>
           <h2
             style={{
-              fontSize: "clamp(48px, 7.5vw, 96px)",
+              fontSize: "clamp(40px, 5.2vw, 72px)",
               fontWeight: 500,
-              letterSpacing: "-0.03em",
-              lineHeight: 1.05,
+              letterSpacing: "-0.035em",
+              lineHeight: 1.06,
               margin: 0,
               marginBottom: "24px",
-              maxWidth: "1100px",
+              maxWidth: "900px",
               color: "#FFFFFF",
               fontFeatureSettings: '"ss01", "cv11"',
-              minHeight: "calc(2em * 1.05)",
             }}
           >
             Command center for your roofing operation.
           </h2>
           <p
             style={{
-              fontSize: "clamp(18px, 2.2vw, 22px)",
-              color: "rgba(255,255,255,0.88)",
+              fontSize: "clamp(16px, 1.8vw, 19px)",
+              color: "rgba(255,255,255,0.72)",
               lineHeight: 1.55,
               fontWeight: 450,
               maxWidth: "36rem",
               margin: 0,
+              marginBottom: "48px",
             }}
           >
             Type a question, get an answer, deploy an agent.
           </p>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "40px", pointerEvents: "auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", pointerEvents: "auto" }}>
             {[
               {
                 label: "Request early access",

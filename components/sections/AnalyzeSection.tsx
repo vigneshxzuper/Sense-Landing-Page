@@ -11,7 +11,7 @@ import ScrollFloat from "@/components/ScrollFloat";
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
-import { Sparkles, CheckCircle2, Loader2, Phone, Mail, MessageSquare, Zap, AlertTriangle, Lightbulb } from "lucide-react";
+import { Sparkles, CheckCircle2, Loader2, Phone, Mail, MessageSquare, Zap, AlertTriangle, Lightbulb, Clock, FileText, Receipt } from "lucide-react";
 import { useDeployedTopic, type DeployTopic } from "@/components/TopicContext";
 import {
   Chart as ChartJS,
@@ -321,6 +321,19 @@ const ACT_VARIANTS: Record<DeployTopic, ActVariant> = {
 export default function AnalyzeSection() {
   const [topic, setTopic] = useState<Topic>(null);
   const [view, setView] = useState<"ask" | "analyze" | "act">("ask");
+  // Separate tab state for the 4-tab UI on top of the Mac frame. Drawn
+  // from the same scroll progress as `view`, but split into 4 quartiles
+  // so the visible journey reads as Monitor → Analyze → Predict →
+  // Recommend even though the underlying content has 3 phases.
+  const [activeTab, setActiveTab] = useState<"monitor" | "analyze" | "predict" | "recommend">("monitor");
+  // Set true the moment the SenseChat in the intro fires the
+  // "sense-radar-added" custom event — the Monitor view then surfaces
+  // the Overdue-invoices card alongside the 3 always-on radar tiles.
+
+  // No auto-scroll — scrolling alone drives the whole journey, so
+  // scrolling back up restores the intro (title + prompt box +
+  // result card) naturally as introProgress decreases.
+
   const { deployedTopic, setDeployedTopic } = useDeployedTopic();
   const [actCompleted, setActCompleted] = useState<number[]>([]);
   const [actActive, setActActive] = useState(-1);
@@ -434,6 +447,33 @@ export default function AnalyzeSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const askRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<ScrollTrigger | null>(null);
+  const introRef = useRef<HTMLDivElement>(null);
+  const [introProgress, setIntroProgress] = useState(0);
+
+  // overdueOnRadar is purely scroll-driven from the intro scrub
+  // progress — same 0.94 threshold the SenseChat uses for its
+  // "added to radar" beat. Drives the intro fade-out AND lets it
+  // come back when the user scrolls up.
+  const overdueOnRadar = introProgress >= 0.94;
+
+  // Pin the intro band so its full typing → generate → result →
+  // add-to-radar choreography scrubs with scroll instead of running
+  // on timers.
+  useGSAP(() => {
+    if (!introRef.current) return;
+    const trigger = ScrollTrigger.create({
+      trigger: introRef.current,
+      start: "top top",
+      end: "+=300%",
+      pin: true,
+      pinSpacing: true,
+      scrub: 1.2,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => setIntroProgress(self.progress),
+    });
+    return () => trigger.kill();
+  }, { scope: sectionRef });
 
   // Scroll-driven view: pin spans full Ask → Analyze → Act and
   // ScrollTrigger.onUpdate maps scroll progress to the active view.
@@ -451,7 +491,10 @@ export default function AnalyzeSection() {
         const p = self.progress;
         const next: "ask" | "analyze" | "act" =
           p < 0.34 ? "ask" : p < 0.67 ? "analyze" : "act";
+        const nextTab: "monitor" | "analyze" | "predict" | "recommend" =
+          p < 0.25 ? "monitor" : p < 0.5 ? "analyze" : p < 0.75 ? "predict" : "recommend";
         setView((prev) => (prev === next ? prev : next));
+        setActiveTab((prev) => (prev === nextTab ? prev : nextTab));
       },
     });
     triggerRef.current = trigger;
@@ -556,10 +599,62 @@ export default function AnalyzeSection() {
       ref={sectionRef}
       style={{ background: "var(--bg)", padding: "0 24px", position: "relative", marginTop: "-2px" }}
     >
-      {/* Automatic stepper — outside the Mac window, sticky to the
-          viewport so it stays visible across the entire Ask → Analyze
-          → Act journey. Driven purely by scroll-derived `view` state;
-          no clicks or buttons. */}
+      {/* Intro band — title + prompt bar. Pinned by GSAP so its full
+          chat choreography scrubs with scroll. Once the radar add
+          fires, the intro fades AND the Monitor Mac window overlay
+          fades in over the same area — no scroll motion required. */}
+      <div
+        ref={introRef}
+        style={{
+          minHeight: "100vh",
+          position: "relative",
+          width: "100%",
+        }}
+      >
+        {/* Intro inner — title + prompt, fades out on radar add */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "80px 0",
+            maxWidth: "900px",
+            margin: "0 auto",
+            textAlign: "center",
+            zIndex: 1,
+            opacity: overdueOnRadar ? 0 : 1,
+            transform: overdueOnRadar ? "translateY(-16px)" : "translateY(0)",
+            pointerEvents: overdueOnRadar ? "none" : "auto",
+            transition: "opacity 720ms cubic-bezier(0.22,1,0.36,1), transform 720ms cubic-bezier(0.22,1,0.36,1)",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "clamp(34px, 4.4vw, 56px)",
+              fontWeight: 500,
+              letterSpacing: "-0.035em",
+              lineHeight: 1.06,
+              margin: "0 auto 36px",
+              maxWidth: "720px",
+              color: "var(--ink)",
+              fontFeatureSettings: '"ss01", "cv11"',
+            }}
+          >
+            All it takes is one right question.
+          </h2>
+          <SenseChat scrollProgress={introProgress} />
+        </div>
+
+      </div>
+
+      {/* Four-tab bar — Monitor → Analyze → Predict → Recommend.
+          Sticky below the nav. The active tab tracks scroll-driven
+          `activeTab` state which splits the section's 240% pin into
+          four equal quartiles; the content below uses the simpler 3-
+          phase `view` state to drive the chat / chart / act swap. */}
       <div
         aria-hidden
         style={{
@@ -576,125 +671,330 @@ export default function AnalyzeSection() {
       >
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "22px",
-            padding: "16px 34px",
-            borderRadius: "100px",
+            display: "grid",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            width: "min(960px, 92vw)",
             background: "rgba(10, 10, 12, 0.7)",
             backdropFilter: "blur(24px) saturate(160%)",
             WebkitBackdropFilter: "blur(24px) saturate(160%)",
             border: "1px solid rgba(255,255,255,0.10)",
+            borderRadius: "14px",
+            overflow: "hidden",
             boxShadow: [
               "0 18px 48px -16px rgba(0,0,0,0.6)",
               "inset 0 1px 0 rgba(255,255,255,0.06)",
             ].join(", "),
           }}
         >
-          {(["ask", "analyze", "act"] as const).map((step, i, arr) => {
-            const currentIdx = arr.indexOf(view);
-            const isActive = view === step;
-            const isPast = currentIdx > i;
-            const isDone = isActive || isPast;
+          {([
+            { key: "monitor",  label: "Monitor" },
+            { key: "analyze",  label: "Analyze" },
+            { key: "predict",  label: "Predict" },
+            { key: "recommend", label: "Recommend" },
+          ] as const).map((tab, i, arr) => {
+            const isActive = activeTab === tab.key;
             return (
-              <span key={step} style={{ display: "flex", alignItems: "center", gap: "22px" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "11px" }}>
-                  <span
-                    style={{
-                      position: "relative",
-                      width: "12px",
-                      height: "12px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {isActive && (
-                      <span
-                        aria-hidden
-                        style={{
-                          position: "absolute",
-                          inset: "-6px",
-                          borderRadius: "50%",
-                          background: "rgba(232,93,58,0.28)",
-                          filter: "blur(4px)",
-                          animation: "stepper-pulse 1.6s ease-in-out infinite",
-                        }}
-                      />
-                    )}
-                    <span
-                      style={{
-                        position: "relative",
-                        width: isActive ? "12px" : "10px",
-                        height: isActive ? "12px" : "10px",
-                        borderRadius: "50%",
-                        background: isDone ? "#E85D3A" : "rgba(255,255,255,0.18)",
-                        boxShadow: isActive
-                          ? "0 0 0 3px rgba(232,93,58,0.18), 0 0 14px rgba(232,93,58,0.55)"
-                          : isPast
-                            ? "0 0 0 2px rgba(232,93,58,0.12)"
-                            : "none",
-                        transition:
-                          "background 360ms cubic-bezier(0.22,1,0.36,1), width 360ms cubic-bezier(0.22,1,0.36,1), height 360ms cubic-bezier(0.22,1,0.36,1), box-shadow 360ms cubic-bezier(0.22,1,0.36,1)",
-                      }}
-                    />
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "15px",
-                      fontWeight: isActive ? 600 : 500,
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      color: isActive ? "#FFFFFF" : isPast ? "var(--ink2)" : "var(--ink3)",
-                      transition: "color 360ms cubic-bezier(0.22,1,0.36,1), font-weight 360ms cubic-bezier(0.22,1,0.36,1)",
-                    }}
-                  >
-                    {step}
-                  </span>
-                </span>
-                {i < arr.length - 1 && (
-                  <span
-                    style={{
-                      width: "48px",
-                      height: "2px",
-                      borderRadius: "1px",
-                      background: isPast ? "#E85D3A" : "rgba(255,255,255,0.12)",
-                      boxShadow: isPast ? "0 0 8px rgba(232,93,58,0.35)" : "none",
-                      transition: "background 360ms cubic-bezier(0.22,1,0.36,1), box-shadow 360ms cubic-bezier(0.22,1,0.36,1)",
-                    }}
-                  />
-                )}
-              </span>
+              <div
+                key={tab.key}
+                style={{
+                  position: "relative",
+                  padding: "16px 12px",
+                  textAlign: "center",
+                  fontSize: "14px",
+                  fontWeight: isActive ? 600 : 500,
+                  letterSpacing: "0.04em",
+                  color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.45)",
+                  background: isActive ? "rgba(232,93,58,0.08)" : "transparent",
+                  borderRight:
+                    i < arr.length - 1
+                      ? "1px solid rgba(255,255,255,0.08)"
+                      : "none",
+                  transition:
+                    "color 360ms cubic-bezier(0.22,1,0.36,1), font-weight 360ms cubic-bezier(0.22,1,0.36,1), background 360ms cubic-bezier(0.22,1,0.36,1)",
+                }}
+              >
+                {tab.label}
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: "2px",
+                    background: isActive ? "#E85D3A" : "transparent",
+                    boxShadow: isActive
+                      ? "0 0 10px rgba(232,93,58,0.55)"
+                      : "none",
+                    transition:
+                      "background 360ms cubic-bezier(0.22,1,0.36,1), box-shadow 360ms cubic-bezier(0.22,1,0.36,1)",
+                  }}
+                />
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Ask — centered chat. View state swaps Ask / Analyze / Act inside the Mac window. */}
+      {/* Monitor view — radar dashboard with 4 cards inside the Mac
+          window. Shown when view === "ask" (Monitor / Analyze tabs).
+          Overdue-invoices card surfaces once the user's auto-cursor
+          presses Add-to-Radar in the intro SenseChat. */}
       <div ref={askRef} style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0", position: "relative" }}>
         <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={parallaxOffset} />
         <div
           style={{
-            maxWidth: "900px",
-            margin: "0 auto",
-            textAlign: "center",
-            width: "100%",
-            position: "relative",
-            zIndex: 1,
-            transform:
-              view === "ask"
-                ? `translateY(calc(${(1 - Math.min(1, askProgress / 0.3)) * 24}px))`
-                : `translateY(${offsetFor("ask")}%)`,
-            opacity: view === "ask" ? Math.min(1, askProgress / 0.25) : 0,
-            pointerEvents: "none",
-            transition:
-              view === "ask" && askProgress < 1
-                ? "none"
-                : viewTransition,
+            position: "absolute",
+            inset: 0,
+            paddingTop: "160px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 2,
+            opacity: isActive("ask") ? 1 : 0,
+            transform: `translateY(${offsetFor("ask")}%)`,
+            pointerEvents: view === "ask" ? "auto" : "none",
+            transition: viewTransition,
           }}
         >
-          <div>
-            <SenseChat />
+          <div style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
+            <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "22px 32px", display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 12px", borderRadius: "999px", background: "rgba(232,93,58,0.10)", border: "1px solid rgba(232,93,58,0.30)", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>
+                  Task Radar
+                </div>
+                <span style={{ fontSize: "11px", color: "var(--ink3)" }}>Live · updated just now</span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", alignItems: "start" }}>
+                {/* Overdue invoices — matches the result card from the
+                    intro prompt (header + big $, aging bars, Added-to-
+                    Radar pill). Glows with the "NEW" ring once it
+                    lands on the radar via the auto-cursor sequence. */}
+                <div
+                  style={{
+                    position: "relative",
+                    gridColumn: "1 / span 1",
+                    gridRow: "1 / span 2",
+                    background: "var(--card-bg)",
+                    border: "1px solid var(--card-border)",
+                    borderRadius: "14px",
+                    padding: "16px 18px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    opacity: overdueOnRadar ? 1 : 0,
+                    transform: overdueOnRadar ? "translateY(0) scale(1)" : "translateY(8px) scale(0.98)",
+                    transition: "opacity 520ms cubic-bezier(0.22,1,0.36,1), transform 520ms cubic-bezier(0.22,1,0.36,1)",
+                    boxShadow: overdueOnRadar ? "0 0 0 2px rgba(232,93,58,0.25), 0 10px 24px -10px rgba(232,93,58,0.35)" : "none",
+                  }}
+                >
+                  {overdueOnRadar && (
+                    <span
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        top: "10px",
+                        right: "10px",
+                        fontSize: "9px",
+                        fontWeight: 600,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#FFD7C5",
+                        background: "rgba(232,93,58,0.18)",
+                        border: "1px solid rgba(232,93,58,0.5)",
+                        padding: "2px 7px",
+                        borderRadius: "999px",
+                      }}
+                    >
+                      New
+                    </span>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(232,93,58,0.14)" }}>
+                      <Receipt className="w-3.5 h-3.5" style={{ color: "#E85D3A" }} />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15 }}>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.005em" }}>Overdue invoices</span>
+                      <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Last 30 days</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+                    <span style={{ fontSize: "26px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>$87,450</span>
+                    <span style={{ fontSize: "11px", color: "var(--ink2)" }}>across 9 invoices · oldest 47 days</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {[
+                      { label: "0 – 30 days",  pct: 36, value: "$32K", color: "rgba(34,197,94,0.85)" },
+                      { label: "30 – 60 days", pct: 32, value: "$28K", color: "rgba(245,158,11,0.85)" },
+                      { label: "60+ days",     pct: 32, value: "$27K", color: "rgba(239,68,68,0.85)" },
+                    ].map((b) => (
+                      <div key={b.label} style={{ display: "grid", gridTemplateColumns: "82px 1fr 40px", alignItems: "center", gap: "8px", fontSize: "11px", color: "var(--ink2)" }}>
+                        <span>{b.label}</span>
+                        <span style={{ position: "relative", height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                          <span style={{ position: "absolute", inset: "0 auto 0 0", width: `${b.pct}%`, background: b.color, borderRadius: "3px" }} />
+                        </span>
+                        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>{b.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "auto" }}>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 12px",
+                        borderRadius: "999px",
+                        fontSize: "11.5px",
+                        fontWeight: 600,
+                        border: "1px solid rgba(34,197,94,0.45)",
+                        background: "rgba(34,197,94,0.12)",
+                        color: "#22C55E",
+                      }}
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      Added to Radar
+                    </span>
+                  </div>
+                </div>
+
+                {/* Dormant estimates — donut chart of aging buckets */}
+                <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Clock className="w-4 h-4" style={{ color: "#FCA5A5" }} />
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#FCA5A5" }}>Dormant estimates</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                    {/* Donut */}
+                    <svg width="72" height="72" viewBox="0 0 36 36" style={{ flexShrink: 0 }}>
+                      <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
+                      {([
+                        { color: "#FCA5A5", value: 50 },
+                        { color: "rgba(252,165,165,0.6)", value: 33 },
+                        { color: "rgba(252,165,165,0.35)", value: 17 },
+                      ]).reduce<React.ReactElement[]>((acc, seg, i, arr) => {
+                        const prevTotal = arr.slice(0, i).reduce((s, x) => s + x.value, 0);
+                        const circumference = 2 * Math.PI * 14;
+                        const dash = (seg.value / 100) * circumference;
+                        const offset = (prevTotal / 100) * circumference;
+                        acc.push(
+                          <circle
+                            key={i}
+                            cx="18"
+                            cy="18"
+                            r="14"
+                            fill="none"
+                            stroke={seg.color}
+                            strokeWidth="5"
+                            strokeDasharray={`${dash} ${circumference - dash}`}
+                            strokeDashoffset={-offset}
+                            transform="rotate(-90 18 18)"
+                            strokeLinecap="butt"
+                          />
+                        );
+                        return acc;
+                      }, [])}
+                      <text x="18" y="19" textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="600" fill="var(--ink)" style={{ fontVariantNumeric: "tabular-nums" }}>
+                        12
+                      </text>
+                    </svg>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "18px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>$318K</div>
+                      <div style={{ fontSize: "10.5px", color: "var(--ink3)" }}>aging out</div>
+                      {[
+                        { label: "10–20d", pct: 50, color: "#FCA5A5" },
+                        { label: "20–30d", pct: 33, color: "rgba(252,165,165,0.6)" },
+                        { label: "30+d",   pct: 17, color: "rgba(252,165,165,0.35)" },
+                      ].map((b) => (
+                        <div key={b.label} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", color: "var(--ink2)" }}>
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: b.color }} />
+                          <span style={{ flex: 1 }}>{b.label}</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums", color: "var(--ink2)" }}>{b.pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stuck supplements — horizontal bars by carrier */}
+                <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <FileText className="w-4 h-4" style={{ color: "#FCD34D" }} />
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "#FCD34D" }}>Stuck supplements</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+                      <span style={{ fontSize: "18px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>$164K</span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                    {[
+                      { carrier: "State Farm", pct: 100, value: "$72K", days: 47 },
+                      { carrier: "Allstate",   pct: 58,  value: "$42K", days: 38 },
+                      { carrier: "USAA",       pct: 42,  value: "$30K", days: 33 },
+                      { carrier: "Farmers",    pct: 28,  value: "$20K", days: 31 },
+                    ].map((b) => (
+                      <div key={b.carrier} style={{ display: "grid", gridTemplateColumns: "70px 1fr 38px", alignItems: "center", gap: "8px", fontSize: "10.5px", color: "var(--ink2)" }}>
+                        <span style={{ color: "var(--ink)" }}>{b.carrier}</span>
+                        <span style={{ position: "relative", height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                          <span style={{ position: "absolute", inset: "0 auto 0 0", width: `${b.pct}%`, background: `linear-gradient(90deg, rgba(252,211,77,0.85), rgba(245,158,11,0.65))`, borderRadius: "3px" }} />
+                        </span>
+                        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>{b.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Missed calls — sparkline of last 7 days */}
+                <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Phone className="w-4 h-4" style={{ color: "#C4B5FD" }} />
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "#C4B5FD" }}>Missed calls</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                      <span style={{ fontSize: "20px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums" }}>11</span>
+                      <span style={{ fontSize: "10px", color: "#EF4444" }}>3 urgent</span>
+                    </div>
+                  </div>
+                  {/* Sparkline */}
+                  <div style={{ position: "relative", height: "56px", marginTop: "2px" }}>
+                    <svg viewBox="0 0 200 56" preserveAspectRatio="none" width="100%" height="100%" style={{ display: "block" }}>
+                      <defs>
+                        <linearGradient id="spark-violet" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(196,181,253,0.4)" />
+                          <stop offset="100%" stopColor="rgba(196,181,253,0)" />
+                        </linearGradient>
+                      </defs>
+                      {(() => {
+                        const data = [4, 7, 5, 9, 6, 8, 11];
+                        const max = Math.max(...data);
+                        const step = 200 / (data.length - 1);
+                        const pts = data.map((v, i) => [i * step, 56 - (v / max) * 44 - 4] as const);
+                        const linePath = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`).join(" ");
+                        const areaPath = `${linePath} L 200 56 L 0 56 Z`;
+                        const [lx, ly] = pts[pts.length - 1];
+                        return (
+                          <>
+                            <path d={areaPath} fill="url(#spark-violet)" />
+                            <path d={linePath} fill="none" stroke="#C4B5FD" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                            <circle cx={lx} cy={ly} r="3" fill="#C4B5FD" />
+                            <circle cx={lx} cy={ly} r="6" fill="rgba(196,181,253,0.25)" />
+                          </>
+                        );
+                      })()}
+                    </svg>
+                    <div style={{ position: "absolute", inset: "auto 0 -2px 0", display: "flex", justifyContent: "space-between", fontSize: "9px", color: "var(--ink3)", padding: "0 1px" }}>
+                      {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d) => (
+                        <span key={d}>{d}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "10.5px", color: "var(--ink3)" }}>CSR Agent cleared 9 of them this morning.</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

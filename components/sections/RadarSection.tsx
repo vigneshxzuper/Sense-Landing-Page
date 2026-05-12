@@ -4,25 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { AlertTriangle, Clock, FileText, Users, BarChart3, Wrench, MapPin, CalendarDays, Phone, HardHat } from "lucide-react";
+import { Users, BarChart3, Wrench, MapPin, CalendarDays, HardHat } from "lucide-react";
 import ScrollFloat from "@/components/ScrollFloat";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
 }
-
-const ALERT_CARDS = [
-  { icon: FileText, label: "Stuck supplements", value: "7", sub: "$164,300 sitting with carriers", detail: "Submitted 30+ days ago. Oldest is State Farm at 47 days.", color: "#FCD34D", bg: "linear-gradient(160deg, rgba(245,158,11,0.14) 0%, var(--surface2) 100%)", border: "rgba(245,158,11,0.30)", glow: "rgba(245,158,11,0.25)" },
-  { icon: Clock, label: "Dormant estimates", value: "12", sub: "$318,000 aging out", detail: "No touch in 10+ days. Sales Coach Agent is ready.", color: "#FCA5A5", bg: "linear-gradient(160deg, rgba(239,68,68,0.14) 0%, var(--surface2) 100%)", border: "rgba(239,68,68,0.30)", glow: "rgba(239,68,68,0.25)" },
-  { icon: AlertTriangle, label: "Unsent invoices", value: "9", sub: "$87,450 in completed work", detail: "Jobs closed out. Invoices never went.", color: "#F5A788", bg: "linear-gradient(160deg, rgba(232,93,58,0.14) 0%, var(--surface2) 100%)", border: "rgba(232,93,58,0.30)", glow: "rgba(232,93,58,0.25)" },
-  { icon: Phone, label: "Missed calls", value: "11", sub: "3 urgent", detail: "CSR Agent has cleared 9 of them since this morning.", color: "#C4B5FD", bg: "linear-gradient(160deg, rgba(139,92,246,0.14) 0%, var(--surface2) 100%)", border: "rgba(139,92,246,0.30)", glow: "rgba(139,92,246,0.25)" },
-];
-
-const RECEIVABLES_BUCKETS = [
-  { label: "0–30 days", value: 74200, pct: 31, color: "var(--yellow)" },
-  { label: "31–60 days", value: 83900, pct: 35, color: "#E85D3A" },
-  { label: "60+ days", value: 83700, pct: 34, color: "var(--red)" },
-];
 
 const UPCOMING_JOBS = [
   { title: "Re-roof · Hargrove residence", tech: "Reyes crew", time: "Today, 1:00 PM", status: "On track", statusColor: "#22C55E" },
@@ -42,9 +29,6 @@ export default function RadarSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const targetSlotRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
-  const [alertOrder, setAlertOrder] = useState([0, 1, 2, 3]);
-  const [grabbedCard, setGrabbedCard] = useState<number | null>(null);
-  const [liftPhase, setLiftPhase] = useState<"idle" | "lifting" | "moving" | "dropping">("idle");
 
   // Shared-element transition. The live activity card lives in
   // AnalyzeSection's Act view; we don't render a copy. Instead, as the
@@ -191,59 +175,6 @@ export default function RadarSection() {
     return () => io.disconnect();
   }, []);
 
-  // Simulate grab-and-drag rearrange
-  useEffect(() => {
-    if (!visible) return;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    // Step 1: Grab card index 1 (Jobs Behind SLA)
-    timers.push(setTimeout(() => {
-      setGrabbedCard(1);
-      setLiftPhase("lifting");
-    }, 2200));
-
-    // Step 2: Lift it up
-    timers.push(setTimeout(() => {
-      setLiftPhase("moving");
-    }, 2600));
-
-    // Step 3: Move it to position 0 (swap with Stuck Quotes)
-    timers.push(setTimeout(() => {
-      setAlertOrder([1, 0, 2, 3]);
-    }, 3000));
-
-    // Step 4: Drop it
-    timers.push(setTimeout(() => {
-      setLiftPhase("dropping");
-    }, 3600));
-
-    // Step 5: Reset grab state
-    timers.push(setTimeout(() => {
-      setGrabbedCard(null);
-      setLiftPhase("idle");
-    }, 4000));
-
-    // Step 6: Grab card index 2 (Pending Invoices) and move to pos 1
-    timers.push(setTimeout(() => {
-      setGrabbedCard(2);
-      setLiftPhase("lifting");
-    }, 5000));
-    timers.push(setTimeout(() => {
-      setLiftPhase("moving");
-    }, 5400));
-    timers.push(setTimeout(() => {
-      setAlertOrder([1, 2, 0, 3]);
-    }, 5800));
-    timers.push(setTimeout(() => {
-      setLiftPhase("dropping");
-    }, 6400));
-    timers.push(setTimeout(() => {
-      setGrabbedCard(null);
-      setLiftPhase("idle");
-    }, 6800));
-
-    return () => timers.forEach(clearTimeout);
-  }, [visible]);
 
   const card: React.CSSProperties = {
     background: "var(--surface2)",
@@ -319,86 +250,7 @@ export default function RadarSection() {
           </div>
         </div>
 
-        {/* Alert cards row — with grab & drag rearrange */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "16px" }}>
-          {ALERT_CARDS.map((a, i) => {
-            const targetPos = alertOrder.indexOf(i);
-            const offset = targetPos - i;
-            const isGrabbed = grabbedCard === i;
-            const isLifted = isGrabbed && (liftPhase === "lifting" || liftPhase === "moving");
-            const isDropping = isGrabbed && liftPhase === "dropping";
-
-            // Build transform
-            let transform = "translateY(20px)"; // initial hidden state
-            if (visible) {
-              if (isLifted) {
-                // Card is grabbed — lift up, tilt, and move to target
-                const moveX = liftPhase === "moving" ? `calc(${offset * 100}% + ${offset * 12}px)` : "0px";
-                transform = `translateX(${moveX}) translateY(-16px) rotate(-2deg) scale(1.05)`;
-              } else if (isDropping) {
-                // Dropping down into place
-                transform = `translateX(calc(${offset * 100}% + ${offset * 12}px)) translateY(0) rotate(0deg) scale(1)`;
-              } else if (offset !== 0) {
-                // Settled in new position
-                transform = `translateX(calc(${offset * 100}% + ${offset * 12}px))`;
-              } else {
-                transform = "translateY(0)";
-              }
-            }
-
-            return (
-            <div
-              key={a.label}
-              style={{
-                background: "var(--card-bg)",
-                border: `1px solid ${isLifted ? "rgba(255,255,255,0.25)" : "var(--card-border)"}`,
-                borderRadius: "14px",
-                padding: "18px",
-                cursor: isLifted ? "grabbing" : "default",
-                transform,
-                opacity: visible ? 1 : 0,
-                zIndex: isGrabbed ? 10 : 1,
-                boxShadow: isLifted
-                  ? "0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)"
-                  : isDropping
-                  ? "0 4px 12px rgba(0,0,0,0.3)"
-                  : "none",
-                transition: isLifted
-                  ? "transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s, border-color 0.3s"
-                  : isDropping
-                  ? "all 0.4s cubic-bezier(0.22,1,0.36,1)"
-                  : grabbedCard !== null && !isGrabbed
-                  ? "transform 0.5s cubic-bezier(0.22,1,0.36,1)"
-                  : `all 0.6s ${0.08 * (i + 4)}s cubic-bezier(0.22,1,0.36,1)`,
-                position: "relative",
-              }}
-            >
-              {/* Grab handle dots — visible on grabbed card */}
-              {isGrabbed && (
-                <div style={{
-                  position: "absolute", top: "8px", left: "50%", transform: "translateX(-50%)",
-                  display: "flex", gap: "3px", opacity: 0.5,
-                }}>
-                  {[0,1,2,3,4,5].map(d => (
-                    <div key={d} style={{ width: "3px", height: "3px", borderRadius: "50%", background: "rgba(255,255,255,0.5)" }} />
-                  ))}
-                </div>
-              )}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-                <a.icon className="w-4 h-4" style={{ color: a.color }} />
-                <span style={{ fontSize: "13px", fontWeight: 600, color: a.color }}>{a.label}</span>
-              </div>
-              <div style={{ fontSize: "32px", fontWeight: 600, color: a.color, letterSpacing: "-0.03em", marginBottom: "4px" }}>{a.value}</div>
-              <div style={{ fontSize: "12px", color: "var(--ink2)", marginBottom: "2px" }}>{a.sub}</div>
-              <div style={{ fontSize: "11px", color: "var(--ink3)" }}>{a.detail}</div>
-            </div>
-            );
-          })}
-        </div>
-
-        {/* Bottom grid: 2 columns × 2 rows. One slot in the second row
-            is the target landing zone for the live activity card that
-            travels in from AnalyzeSection. */}
+        {/* Bottom grid: Revenue MTD + Next 24 hours side-by-side. */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
 
           {/* Revenue MTD vs target */}
@@ -427,75 +279,46 @@ export default function RadarSection() {
             </div>
           </div>
 
-          {/* Aging receivables */}
+          {/* Next 24 hours — sits next to Revenue MTD. Compact 2×2 grid
+              of the upcoming jobs. */}
           <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(9) }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-              <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Aging receivables</span>
-              <span style={{ fontSize: "12px", color: "var(--red)", fontWeight: 600 }}>$241,800</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+              <CalendarDays className="w-4 h-4 text-[#3F3F46]" />
+              <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Next 24 hours</span>
             </div>
-            {/* Horizontal bars */}
-            {RECEIVABLES_BUCKETS.map((b) => (
-              <div key={b.label} style={{ marginBottom: "10px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "4px" }}>
-                  <span style={{ color: "var(--ink2)" }}>{b.label}</span>
-                  <span style={{ color: "var(--ink2)", fontWeight: 500 }}>${(b.value / 1000).toFixed(1)}K</span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              {UPCOMING_JOBS.map((j) => (
+                <div
+                  key={j.title}
+                  style={{
+                    background: "var(--card-bg)",
+                    border: "1px solid var(--card-border)",
+                    borderRadius: "10px",
+                    padding: "12px",
+                    transition: "all 0.2s",
+                    cursor: "default",
+                    boxShadow: "none",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  <div style={{ fontSize: "12px", color: "var(--ink)", fontWeight: 500, marginBottom: "6px", lineHeight: 1.3 }}>{j.title}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>
+                    <Wrench className="w-3 h-3 text-[#3F3F46]" />
+                    <span style={{ fontSize: "10.5px", color: j.tech === "Unassigned" ? "#EF4444" : "#71717A" }}>{j.tech}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "8px" }}>
+                    <MapPin className="w-3 h-3 text-[#3F3F46]" />
+                    <span style={{ fontSize: "10.5px", color: "var(--ink3)" }}>{j.time}</span>
+                  </div>
+                  <span style={{ fontSize: "10px", fontWeight: 500, color: j.statusColor, background: `${j.statusColor}15`, padding: "2px 8px", borderRadius: "100px" }}>
+                    {j.status}
+                  </span>
                 </div>
-                <div style={{ height: "6px", background: "var(--glass-bg)", borderRadius: "3px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: visible ? `${b.pct}%` : "0%", background: b.color, borderRadius: "3px", transition: "width 1s cubic-bezier(0.22,1,0.36,1)" }} />
-                </div>
-              </div>
-            ))}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "14px" }}>
-              <div style={{ background: "var(--glass-bg)", borderRadius: "8px", padding: "8px 10px" }}>
-                <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Open invoices</div>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>22</div>
-              </div>
-              <div style={{ background: "var(--glass-bg)", borderRadius: "8px", padding: "8px 10px" }}>
-                <div style={{ fontSize: "10px", color: "var(--ink3)" }}>Avg age</div>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>38 days</div>
-              </div>
+              ))}
             </div>
           </div>
 
-        </div>
-
-        {/* Upcoming jobs — full width */}
-        <div style={{ ...card, marginTop: "16px", background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(11) }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-            <CalendarDays className="w-4 h-4 text-[#3F3F46]" />
-            <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Next 24 hours</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
-            {UPCOMING_JOBS.map((j) => (
-              <div
-                key={j.title}
-                style={{
-                  background: "var(--card-bg)",
-                  border: "1px solid var(--card-border)",
-                  borderRadius: "10px",
-                  padding: "14px",
-                  transition: "all 0.2s",
-                  cursor: "default",
-                  boxShadow: "none",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                <div style={{ fontSize: "13px", color: "var(--ink)", fontWeight: 500, marginBottom: "6px", lineHeight: 1.3 }}>{j.title}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>
-                  <Wrench className="w-3 h-3 text-[#3F3F46]" />
-                  <span style={{ fontSize: "11px", color: j.tech === "Unassigned" ? "#EF4444" : "#71717A" }}>{j.tech}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "8px" }}>
-                  <MapPin className="w-3 h-3 text-[#3F3F46]" />
-                  <span style={{ fontSize: "11px", color: "var(--ink3)" }}>{j.time}</span>
-                </div>
-                <span style={{ fontSize: "10px", fontWeight: 500, color: j.statusColor, background: `${j.statusColor}15`, padding: "2px 8px", borderRadius: "100px" }}>
-                  {j.status}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </section>
