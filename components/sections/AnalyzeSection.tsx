@@ -134,8 +134,8 @@ type Topic = "performance" | "sla" | "revenue" | null;
 /* ── TOPIC CONFIG ── */
 const TOPIC_CONFIG = {
   revenue: {
-    question: "Calls I missed yesterday",
-    aiText: "11 missed calls. 3 look like storm damage, 2 are existing customers, 6 are new leads.",
+    question: "What's happening with my overdue invoices",
+    aiText: "Over the last 3 months, overdue invoices climbed hard into April before easing in May. Amount Overdue peaked at $2.10M in April across 40 overdue invoices, up from $1.45M in March and just $18.3K in February — the main signal is that the backlog built fast in March and April, even though the oldest debt was actually in February at 89 max days past due.",
   },
   performance: {
     question: "Aging supplements by carrier",
@@ -149,16 +149,16 @@ const TOPIC_CONFIG = {
 
 /* ── CHART DATA ── */
 const missedCallKpis = [
-  { label: "MISSED", value: "11" },
-  { label: "PIPELINE AT RISK", value: "$78K" },
-  { label: "URGENT", value: "3", accent: "#ef4444" },
+  { label: "AMOUNT OVERDUE", value: "$2.10M" },
+  { label: "OVERDUE INVOICES", value: "40" },
+  { label: "MAX DAYS PAST DUE", value: "89", accent: "#ef4444" },
 ];
 const missedCallRows = [
-  { time: "4:47 PM", caller: "918-555-0144", reason: "Storm damage, roof leaking", value: "~$22K", urgent: true },
-  { time: "5:12 PM", caller: "Meridian Builders", reason: "Commercial re-roof inquiry", value: "~$40K" },
-  { time: "6:03 PM", caller: "Unknown", reason: "Called twice, no voicemail", value: "Unknown" },
+  { time: "Apr 2026", caller: "Peak month", reason: "Largest backlog buildup", value: "$2.10M", urgent: true },
+  { time: "Mar 2026", caller: "Ramp-up",    reason: "Backlog accelerates from $18K → $1.45M", value: "$1.45M" },
+  { time: "Feb 2026", caller: "Oldest debt", reason: "89 max days past due — earliest exposure", value: "$18.3K" },
 ];
-const missedCallMore = 8;
+const missedCallMore = 0;
 const carrierAgingRows = [
   { carrier: "State Farm", pending: 72400, days: 47 },
   { carrier: "Allstate", pending: 41800, days: 38 },
@@ -300,21 +300,27 @@ const ACT_VARIANTS: Record<DeployTopic, ActVariant> = {
     caption: "Morgan worked 12 dormant estimates · $167K recovered and climbing",
   },
   revenue: {
-    agent: { name: "Nova", role: "CSR Agent", status: "Calling back", tagline: "CSR Agent working through yesterday's missed calls, one by one." },
-    steps: ["Transcribing yesterday's voicemails", "Scoring each call by urgency and lead value", "Placing callbacks in priority order", "Booking inspections that qualify", "Flagging calls that need you personally"],
-    capabilities: ["Call triage", "Callbacks and scheduling", "Routing to the owner"],
+    agent: { name: "Casey", role: "Collections Agent", status: "Working", tagline: "Collections Agent chasing the $2.10M overdue stack, oldest first." },
+    steps: [
+      "Pulling 40 overdue invoices",
+      "Scoring each by amount × days past due",
+      "Drafting personalized outreach",
+      "Calling top 6 accounts in priority order",
+      "Logging promise-to-pay back to the invoice",
+    ],
+    capabilities: ["AR follow-up", "Promise-to-pay tracking", "Carrier escalation"],
     log: [
-      { icon: "call", text: "Called back the storm damage lead", time: "7 min ago" },
-      { icon: "call", text: "Called Meridian Builders", time: "15 min ago" },
-      { icon: "call", text: "Reached 4 new residential leads", time: "23 min ago" },
-      { icon: "email", text: "Answered Mrs. Delacroix's warranty question", time: "31 min ago" },
+      { icon: "call", text: "Called Meridian Builders on $148K invoice", time: "4 min ago" },
+      { icon: "email", text: "Sent dunning letter to State Farm on 89-day-old claim", time: "12 min ago" },
+      { icon: "call", text: "Reached Hargrove Construction — PTP secured for Friday", time: "21 min ago" },
+      { icon: "call", text: "Swept 3 small accounts under $5K", time: "30 min ago" },
     ],
     recap: [
-      { value: "3", label: "inspections booked" },
-      { value: "1", label: "flagged for you" },
-      { value: "2", label: "left to reach" },
+      { value: "$148K", label: "PTP secured" },
+      { value: "$72K",  label: "escalated to adjuster" },
+      { value: "$24K",  label: "auto-collected" },
     ],
-    caption: "Nova worked 11 missed calls in 31 minutes · Storm lead on the truck before coffee went cold",
+    caption: "Casey worked 40 overdue invoices · $244K committed, average days past due 38 → 21",
   },
 };
 
@@ -348,30 +354,12 @@ export default function AnalyzeSection() {
   //   pressed → cursor sits on the button with a quick press squish
   //   done    → cursor faded; button has flipped to confirmation
   const [cursorPhase, setCursorPhase] = useState<"hidden" | "moving" | "pressed" | "done">("hidden");
-  const VIEW_INDEX: Record<"ask" | "analyze" | "act", number> = { ask: 0, analyze: 1, act: 2 };
-  // Smaller slide distance + opacity so we don't need overflow:hidden (which clipped the Mac shadow).
-  const offsetFor = (own: "ask" | "analyze" | "act") => (VIEW_INDEX[own] - VIEW_INDEX[view]) * 28;
+  // View overlays sit on top of one another — no slide distance, just
+  // an opacity swap. Transition is set to "none" so the Mac-window
+  // content snaps the moment the tab crosses its scroll threshold.
+  const offsetFor = (_own: "ask" | "analyze" | "act") => 0;
   const isActive = (own: "ask" | "analyze" | "act") => own === view;
-  const slideTransition = "transform 760ms cubic-bezier(0.65, 0, 0.35, 1), opacity 600ms cubic-bezier(0.65, 0, 0.35, 1)";
-
-  // Suppress opacity/transform transitions on first paint so that the
-  // brief setView("act") fired by ScrollTrigger.onUpdate (before
-  // ScrollReset has run window.scrollTo(0,0) on a reload that browser
-  // restored deep into the section) doesn't fade the act overlay in
-  // and back out — exactly the "act agent card flashes for ~1s on
-  // reload" symptom. After the first paint, transitions are enabled.
-  const [transitionsReady, setTransitionsReady] = useState(false);
-  useEffect(() => {
-    let r2 = 0;
-    const r1 = requestAnimationFrame(() => {
-      r2 = requestAnimationFrame(() => setTransitionsReady(true));
-    });
-    return () => {
-      cancelAnimationFrame(r1);
-      if (r2) cancelAnimationFrame(r2);
-    };
-  }, []);
-  const viewTransition = transitionsReady ? slideTransition : "none";
+  const viewTransition = "none";
 
   // Auto-click choreography. Triggers when all stepper items have
   // completed: cursor flies in (560ms), presses (180ms), then the button
@@ -656,7 +644,6 @@ export default function AnalyzeSection() {
           four equal quartiles; the content below uses the simpler 3-
           phase `view` state to drive the chat / chart / act swap. */}
       <div
-        aria-hidden
         style={{
           position: "sticky",
           top: "104px",
@@ -666,7 +653,6 @@ export default function AnalyzeSection() {
           alignItems: "center",
           marginTop: "32px",
           marginBottom: "-32px",
-          pointerEvents: "none",
         }}
       >
         <div
@@ -687,15 +673,24 @@ export default function AnalyzeSection() {
           }}
         >
           {([
-            { key: "monitor",  label: "Monitor" },
-            { key: "analyze",  label: "Analyze" },
-            { key: "predict",  label: "Predict" },
-            { key: "recommend", label: "Recommend" },
+            { key: "monitor",  label: "Monitor",   progress: 0.12 },
+            { key: "analyze",  label: "Analyze",   progress: 0.37 },
+            { key: "predict",  label: "Predict",   progress: 0.62 },
+            { key: "recommend", label: "Recommend", progress: 0.87 },
           ] as const).map((tab, i, arr) => {
             const isActive = activeTab === tab.key;
+            const onClick = () => {
+              const trig = triggerRef.current;
+              if (!trig) return;
+              const target = trig.start + (trig.end - trig.start) * tab.progress;
+              window.scrollTo({ top: target, behavior: "smooth" });
+            };
             return (
-              <div
+              <button
                 key={tab.key}
+                type="button"
+                onClick={onClick}
+                aria-label={`Jump to ${tab.label}`}
                 style={{
                   position: "relative",
                   padding: "16px 12px",
@@ -709,8 +704,19 @@ export default function AnalyzeSection() {
                     i < arr.length - 1
                       ? "1px solid rgba(255,255,255,0.08)"
                       : "none",
+                  borderTop: "none",
+                  borderLeft: "none",
+                  borderBottom: "none",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
                   transition:
                     "color 360ms cubic-bezier(0.22,1,0.36,1), font-weight 360ms cubic-bezier(0.22,1,0.36,1), background 360ms cubic-bezier(0.22,1,0.36,1)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.color = "rgba(255,255,255,0.75)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.color = "rgba(255,255,255,0.45)";
                 }}
               >
                 {tab.label}
@@ -730,7 +736,7 @@ export default function AnalyzeSection() {
                       "background 360ms cubic-bezier(0.22,1,0.36,1), box-shadow 360ms cubic-bezier(0.22,1,0.36,1)",
                   }}
                 />
-              </div>
+              </button>
             );
           })}
         </div>
@@ -1152,17 +1158,17 @@ export default function AnalyzeSection() {
                         ))}
                       </div>
 
-                      {/* Sorted table — missed calls by urgency */}
+                      {/* Sorted table — overdue invoices month-over-month */}
                       <div style={{ ...cardStyle, padding: 0, overflow: "hidden", boxShadow: "none", position: "relative" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "70px 150px 1fr 80px", padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                          <span>Time</span><span>Caller</span><span>Reason</span><span style={{ textAlign: "right" }}>Value</span>
+                        <div style={{ display: "grid", gridTemplateColumns: "90px 150px 1fr 90px", padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", fontSize: "11px", fontWeight: 500, color: "var(--ink2)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                          <span>Month</span><span>Signal</span><span>Detail</span><span style={{ textAlign: "right" }}>Overdue</span>
                         </div>
                         {missedCallRows.map((r, i) => (
                           <div
                             key={i}
                             style={{
-                              display: "grid", gridTemplateColumns: "70px 150px 1fr 80px", padding: "10px 16px", gap: "8px",
-                              borderBottom: "1px solid rgba(255,255,255,0.05)",
+                              display: "grid", gridTemplateColumns: "90px 150px 1fr 90px", padding: "10px 16px", gap: "8px",
+                              borderBottom: i < missedCallRows.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
                               fontSize: "13px", color: "#d4d4d8", alignItems: "center",
                               opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
                             }}
@@ -1178,9 +1184,6 @@ export default function AnalyzeSection() {
                             <span style={{ textAlign: "right", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{r.value}</span>
                           </div>
                         ))}
-                        <div style={{ padding: "8px 16px", fontSize: "12px", color: "var(--ink2)", fontWeight: 500 }}>
-                          + {missedCallMore} more
-                        </div>
                       </div>
 
                       {/* Prediction card — only when scroll reaches the Predict tab */}
@@ -1191,27 +1194,27 @@ export default function AnalyzeSection() {
                               <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
                                 <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FCA5A5" }} />
                               </span>
-                              <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · Next 24 hrs</span>
+                              <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · 30-day projection</span>
                             </div>
-                            <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>87% confidence</span>
+                            <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>89% confidence</span>
                           </div>
                           <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-                            Storm-damage cluster forming on Tuesday&apos;s hail line.
+                            Overdue stack rebounds to <strong style={{ color: "#FCA5A5" }}>$1.85M</strong> by end of June.
                           </div>
                           <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: "6px 12px", fontSize: "11.5px", color: "var(--ink2)", lineHeight: 1.5 }}>
                             <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Pattern</span>
-                            <span>918-555-0144 called twice, no voicemail. Same ZIP as Tuesday&apos;s hail report — 3 of yesterday&apos;s missed calls cluster here.</span>
+                            <span>May&apos;s ease was a payment burst, not a trend break. 60% of paydowns came from <strong>2 carriers</strong> — the broader backlog kept aging.</span>
                             <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Risk</span>
-                            <span>Storm leads dial <strong style={{ color: "#FCA5A5" }}>~2 competitors within 4 hours</strong>. $22K job likely lost by 9 AM tomorrow.</span>
+                            <span><strong style={{ color: "#FCA5A5" }}>$420K</strong> rolls into the 60+ day bucket within 3 weeks if nothing changes — DSO climbs 38 → 51 days and write-off probability hits 14%.</span>
                             <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Window</span>
-                            <span>Inspection has to land before noon today to win the call-back.</span>
+                            <span>Next 14 days — invoices over $25K that haven&apos;t moved in 3 weeks are the highest-yield targets.</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                             <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Recommended</span>
                             <span style={{ fontSize: "12px", color: "var(--ink)", flex: 1 }}>
-                              Route <strong>Patel</strong> to 918-555-0144 for a roof-leak inspection before 11 AM.
+                              <strong>Casey</strong> (Collections Agent) works the top 8 overdue accounts before Friday.
                             </span>
-                            <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$22K saved</span>
+                            <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$420K saved</span>
                           </div>
                         </div>
                       )}

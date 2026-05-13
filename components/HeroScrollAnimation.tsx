@@ -235,11 +235,13 @@ export default function HeroScrollAnimation() {
         futureTextRef.current,
         {
           scale: 1,
-          // 50% — centre of the hero viewport. The full block (badge,
-          // headline, subhead, buttons, chat) is anchored center-center
-          // so it lands in the dead middle of the hero with even space
-          // above and below.
-          top: "50%",
+          // 47% — centred on the laptop screen instead of the viewport.
+          // With the modern image at objectPosition Y=46%, the laptop's
+          // open display centres around viewport y ≈ 48%, so anchoring
+          // the block (badge → headline → subhead → CTAs) here leaves
+          // equal breathing room above and below it inside the screen
+          // rectangle.
+          top: "47%",
           ease: "power2.inOut",
           duration: 0.55,
         },
@@ -730,13 +732,13 @@ export default function HeroScrollAnimation() {
           </div>
           <h2
             style={{
-              fontSize: "clamp(40px, 5.2vw, 72px)",
+              fontSize: "clamp(44px, 5.8vw, 84px)",
               fontWeight: 500,
               letterSpacing: "-0.035em",
-              lineHeight: 1.06,
+              lineHeight: 1.04,
               margin: 0,
-              marginBottom: "24px",
-              maxWidth: "900px",
+              marginBottom: "20px",
+              maxWidth: "960px",
               color: "#FFFFFF",
               fontFeatureSettings: '"ss01", "cv11"',
             }}
@@ -745,13 +747,13 @@ export default function HeroScrollAnimation() {
           </h2>
           <p
             style={{
-              fontSize: "clamp(16px, 1.8vw, 19px)",
+              fontSize: "clamp(15px, 1.6vw, 18px)",
               color: "rgba(255,255,255,0.72)",
-              lineHeight: 1.55,
+              lineHeight: 1.5,
               fontWeight: 450,
-              maxWidth: "36rem",
+              maxWidth: "34rem",
               margin: 0,
-              marginBottom: "48px",
+              marginBottom: "32px",
             }}
           >
             Type a question, get an answer, deploy an agent.
