@@ -971,7 +971,6 @@ export default function AnalyzeSection() {
                     transform: "translateY(0) scale(1)",
                     transition: "opacity 520ms cubic-bezier(0.22,1,0.36,1), transform 520ms cubic-bezier(0.22,1,0.36,1)",
                     boxShadow: "0 0 0 2px rgba(232,93,58,0.25), 0 10px 24px -10px rgba(232,93,58,0.35)",
-                    position: "relative",
                   }}
                 >
                   <span
