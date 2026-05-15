@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTheme } from "./ThemeProvider";
-import { Sun, Moon, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import RollText from "@/components/RollText";
 import NavZuperAIMenu from "./NavZuperAIMenu";
 import NavProductMenu from "./NavProductMenu";
@@ -18,8 +17,7 @@ const NAV_LINKS: Array<{ label: string; menu?: "zuperAI" | "product" | "solution
 ];
 
 export default function Navbar() {
-  const { theme, toggle } = useTheme();
-  const isDark = theme === "dark";
+  const isDark = true;
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -190,41 +188,8 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* Right: theme + CTA */}
+        {/* Right: CTA */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-          <button
-            onClick={toggle}
-            aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
-            className="nav-press"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "32px",
-              height: "32px",
-              borderRadius: "8px",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              transition: "background 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1)",
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = isDark
-                ? "rgba(255,255,255,0.06)"
-                : "rgba(0,0,0,0.04)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-            }}
-          >
-            {isDark ? (
-              <Moon style={{ width: 14, height: 14, color: "rgba(255,255,255,0.5)" }} />
-            ) : (
-              <Sun style={{ width: 14, height: 14, color: "rgba(0,0,0,0.45)" }} />
-            )}
-          </button>
-
           <a
             href="#analyze-section"
             className="btn-roll nav-press"

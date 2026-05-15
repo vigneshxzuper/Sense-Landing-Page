@@ -41,40 +41,8 @@
   display: inline-block;
 }
 
-/* ── LIGHT MODE (default) ── */
-:root {
-  --bg: #f7f5f1;
-  --surface: #ffffff;
-  --surface2: #f0ede8;
-  --line: rgba(0, 0, 0, 0.08);
-  --ink: #1a1714;
-  --ink2: #5a5248;
-  --ink3: #9a9088;
-  --orange: #E85D3A;
-  --orange-glow: rgba(232, 93, 58, 0.2);
-  --card-bg: #ffffff;
-  --card-border: rgba(15, 18, 24, 0.09);
-  --card-shadow: none;
-  --glass-bg: rgba(0, 0, 0, 0.03);
-  --glass-border: rgba(0, 0, 0, 0.1);
-  --glass-highlight: rgba(255, 255, 255, 0.8);
-  --green: #2d9b6f;
-  --red: #d94040;
-  --yellow: #c08520;
-  --green-bg: rgba(45, 155, 111, 0.1);
-  --red-bg: rgba(217, 64, 64, 0.08);
-  --yellow-bg: rgba(192, 133, 32, 0.1);
-  --tooltip-bg: #ffffff;
-  --tooltip-border: rgba(0, 0, 0, 0.1);
-  --bar-muted: rgba(0, 0, 0, 0.06);
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --dur-press: 140ms;
-  --dur-fast: 200ms;
-  --dur-mid: 280ms;
-}
-
-/* ── DARK MODE ── */
+/* ── DARK MODE (only mode shipped) ── */
+:root,
 [data-theme="dark"] {
   --bg: #09090B;
   --surface: #141417;
@@ -100,6 +68,11 @@
   --tooltip-bg: #1e1e24;
   --tooltip-border: rgba(255, 255, 255, 0.1);
   --bar-muted: rgba(255, 255, 255, 0.08);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-press: 140ms;
+  --dur-fast: 200ms;
+  --dur-mid: 280ms;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
