@@ -643,10 +643,7 @@ export default function AnalyzeSection() {
     setShowChart(false);
     setTopic(t);
     setSelectedIdx(0);
-    setTabRunning(true);
-    setActiveTab("analyze");
-    setView("analyze");
-    setTabStartedAt(Date.now());
+    jumpToTab("analyze");
   };
 
   useEffect(() => {
