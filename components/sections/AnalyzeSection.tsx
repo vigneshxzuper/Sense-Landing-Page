@@ -421,12 +421,12 @@ export default function AnalyzeSection() {
   const [showChart, setShowChart] = useState(false);
 
   const config = topic ? TOPIC_CONFIG[topic] : null;
-  const { displayed: aiText, done: aiDone } = useTypewriter(config?.aiText || "", 8, showAiResponse);
+  const { displayed: aiText, done: aiDone } = useTypewriter(config?.aiText || "", 3, showAiResponse);
 
   // Show chart once typing finishes
   useEffect(() => {
     if (aiDone) {
-      const t = setTimeout(() => setShowChart(true), 150);
+      const t = setTimeout(() => setShowChart(true), 60);
       return () => clearTimeout(t);
     }
   }, [aiDone]);
@@ -434,63 +434,101 @@ export default function AnalyzeSection() {
   const hasTriggered = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
   const askRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<ScrollTrigger | null>(null);
-  const introRef = useRef<HTMLDivElement>(null);
-  const [introProgress, setIntroProgress] = useState(0);
 
-  // overdueOnRadar is purely scroll-driven from the intro scrub
-  // progress — same 0.94 threshold the SenseChat uses for its
-  // "added to radar" beat. Drives the intro fade-out AND lets it
-  // come back when the user scrolls up.
-  const overdueOnRadar = introProgress >= 0.94;
-
-  // Pin the intro band so its full typing → generate → result →
-  // add-to-radar choreography scrubs with scroll instead of running
-  // on timers.
-  useGSAP(() => {
-    if (!introRef.current) return;
-    const trigger = ScrollTrigger.create({
-      trigger: introRef.current,
-      start: "top top",
-      end: "+=300%",
-      pin: true,
-      pinSpacing: true,
-      scrub: 1.2,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      onUpdate: (self) => setIntroProgress(self.progress),
-    });
-    return () => trigger.kill();
-  }, { scope: sectionRef });
-
-  // Scroll-driven view: pin spans full Ask → Analyze → Act and
-  // ScrollTrigger.onUpdate maps scroll progress to the active view.
-  useGSAP(() => {
-    if (!askRef.current) return;
-    const trigger = ScrollTrigger.create({
-      trigger: askRef.current,
-      start: "top top",
-      end: "+=240%",
-      pin: true,
-      pinSpacing: true,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      onUpdate: (self) => {
-        const p = self.progress;
-        const next: "ask" | "analyze" | "act" =
-          p < 0.34 ? "ask" : p < 0.67 ? "analyze" : "act";
-        const nextTab: "monitor" | "analyze" | "predict" | "recommend" =
-          p < 0.25 ? "monitor" : p < 0.5 ? "analyze" : p < 0.75 ? "predict" : "recommend";
-        setView((prev) => (prev === next ? prev : next));
-        setActiveTab((prev) => (prev === nextTab ? prev : nextTab));
-      },
-    });
-    triggerRef.current = trigger;
-    return () => {
-      trigger.kill();
-      triggerRef.current = null;
+  // SenseChat fires `sense-radar-added` once its auto-cursor presses
+  // the Add-to-Radar pill. Flip a flag so the rest of the section can
+  // react (Monitor card glow, etc.) and auto-scroll smoothly to the
+  // Mac-window section right after the user sees "Added to Radar".
+  const [overdueOnRadar, setOverdueOnRadar] = useState(false);
+  useEffect(() => {
+    const onAdded = () => {
+      setOverdueOnRadar(true);
+      // Brief beat to let the green "Added to Radar" pill register,
+      // then smooth-scroll past the prompt block into the Mac window.
+      setTimeout(() => {
+        const el = askRef.current;
+        if (!el) return;
+        const targetY = el.getBoundingClientRect().top + window.scrollY - 100;
+        window.scrollTo({ top: targetY, behavior: "smooth" });
+      }, 900);
     };
-  }, { scope: sectionRef });
+    window.addEventListener("sense-radar-added", onAdded);
+    return () => window.removeEventListener("sense-radar-added", onAdded);
+  }, []);
+
+  // Stepper visibility tracks scroll position both directions so that
+  // scrolling BACK up to the prompt hides the stepper again. Shown
+  // when the Mac-window top is within ~240px of the viewport top
+  // (about to take the sticky spot); hidden otherwise.
+  const [stepperShown, setStepperShown] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const el = askRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setStepperShown(rect.top < 240);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Timer-driven tab progression. Section is no longer scroll-pinned;
+  // when askRef enters the viewport, each tab gets 4s before auto-
+  // advancing to the next. The progress bar under the active tab fills
+  // over that 4s window. Clicking a tab jumps to it and restarts the
+  // 4s timer for that tab. Once Recommend completes, the cycle stops
+  // (no looping). `tabKey` increments on each manual click so the
+  // progress bar's CSS animation restarts.
+  const TAB_ORDER = ["monitor", "analyze", "predict", "recommend"] as const;
+  const TAB_MS = 4000;
+  const [tabStartedAt, setTabStartedAt] = useState<number>(0);
+  const [tabRunning, setTabRunning] = useState(false);
+  const tabTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const tabToView = (t: typeof TAB_ORDER[number]): "ask" | "analyze" | "act" =>
+    t === "monitor" ? "ask" : t === "recommend" ? "act" : "analyze";
+
+  const advanceFrom = (current: typeof TAB_ORDER[number]) => {
+    const idx = TAB_ORDER.indexOf(current);
+    if (idx < 0 || idx >= TAB_ORDER.length - 1) return;
+    const next = TAB_ORDER[idx + 1];
+    setActiveTab(next);
+    setView(tabToView(next));
+    setTabStartedAt(Date.now());
+  };
+
+  // Start the cycle when the Mac-window block first enters the viewport.
+  useEffect(() => {
+    const el = askRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !tabRunning) {
+          setTabRunning(true);
+          setActiveTab("monitor");
+          setView("ask");
+          setTabStartedAt(Date.now());
+          io.disconnect();
+        }
+      },
+      { threshold: 0.35 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [tabRunning]);
+
+  // Schedule the next-tab advance whenever the active tab (re)starts.
+  useEffect(() => {
+    if (!tabRunning) return;
+    if (activeTab === "recommend") return;
+    if (tabTimerRef.current) clearTimeout(tabTimerRef.current);
+    tabTimerRef.current = setTimeout(() => advanceFrom(activeTab), TAB_MS);
+    return () => {
+      if (tabTimerRef.current) clearTimeout(tabTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, tabStartedAt, tabRunning]);
 
   // Stage setup driven by scroll-derived view. Replaces the old
   // auto-deploy timer — entering analyze fires the typewriter, entering
@@ -548,17 +586,15 @@ export default function AnalyzeSection() {
   const parallaxOffset = (askProgress - 0.5) * -50;
 
   const [selectedIdx, setSelectedIdx] = useState(0);
-  // Chip click acts as a shortcut: picks the topic and scrolls the page
-  // forward into the Analyze phase so scroll-driven view catches up.
+  // Chip click jumps the tab cycle straight to Analyze.
   const triggerTopic = (t: Topic) => {
     setShowChart(false);
     setTopic(t);
     setSelectedIdx(0);
-    const trig = triggerRef.current;
-    if (trig) {
-      const target = trig.start + (trig.end - trig.start) * 0.4;
-      window.scrollTo({ top: target, behavior: "smooth" });
-    }
+    setTabRunning(true);
+    setActiveTab("analyze");
+    setView("analyze");
+    setTabStartedAt(Date.now());
   };
 
   useEffect(() => {
@@ -587,38 +623,21 @@ export default function AnalyzeSection() {
       ref={sectionRef}
       style={{ background: "var(--bg)", padding: "0 24px", position: "relative", marginTop: "-2px" }}
     >
-      {/* Intro band — title + prompt bar. Pinned by GSAP so its full
-          chat choreography scrubs with scroll. Once the radar add
-          fires, the intro fades AND the Monitor Mac window overlay
-          fades in over the same area — no scroll motion required. */}
+      {/* Intro band — title + prompt bar. Plays the chat sequence on
+          auto timers when the chat enters the viewport. Once the
+          radar add fires, the "Added to Radar" pill stays visible —
+          the intro doesn't fade out; the user scrolls past it on
+          their own to reach the Mac window below. */}
       <div
-        ref={introRef}
         style={{
-          minHeight: "100vh",
+          padding: "120px 0 80px",
+          maxWidth: "900px",
+          margin: "0 auto",
+          textAlign: "center",
           position: "relative",
-          width: "100%",
         }}
       >
-        {/* Intro inner — title + prompt, fades out on radar add */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "80px 0",
-            maxWidth: "900px",
-            margin: "0 auto",
-            textAlign: "center",
-            zIndex: 1,
-            opacity: overdueOnRadar ? 0 : 1,
-            transform: overdueOnRadar ? "translateY(-16px)" : "translateY(0)",
-            pointerEvents: overdueOnRadar ? "none" : "auto",
-            transition: "opacity 720ms cubic-bezier(0.22,1,0.36,1), transform 720ms cubic-bezier(0.22,1,0.36,1)",
-          }}
-        >
+        <div>
           <h2
             style={{
               fontSize: "clamp(34px, 4.4vw, 56px)",
@@ -633,7 +652,7 @@ export default function AnalyzeSection() {
           >
             All it takes is one right question.
           </h2>
-          <SenseChat scrollProgress={introProgress} />
+          <SenseChat />
         </div>
 
       </div>
@@ -642,7 +661,9 @@ export default function AnalyzeSection() {
           Sticky below the nav. The active tab tracks scroll-driven
           `activeTab` state which splits the section's 240% pin into
           four equal quartiles; the content below uses the simpler 3-
-          phase `view` state to drive the chat / chart / act swap. */}
+          phase `view` state to drive the chat / chart / act swap.
+          Slides down + fades in coordinated with the Mac window
+          entering the viewport. */}
       <div
         style={{
           position: "sticky",
@@ -652,6 +673,10 @@ export default function AnalyzeSection() {
           justifyContent: "center",
           alignItems: "center",
           marginTop: "32px",
+          opacity: stepperShown ? 1 : 0,
+          transform: stepperShown ? "translateY(0)" : "translateY(-28px)",
+          transition: "opacity 700ms cubic-bezier(0.22,1,0.36,1), transform 700ms cubic-bezier(0.22,1,0.36,1)",
+          pointerEvents: stepperShown ? "auto" : "none",
           marginBottom: "-32px",
         }}
       >
@@ -673,17 +698,17 @@ export default function AnalyzeSection() {
           }}
         >
           {([
-            { key: "monitor",  label: "Monitor",   progress: 0.12 },
-            { key: "analyze",  label: "Analyze",   progress: 0.37 },
-            { key: "predict",  label: "Predict",   progress: 0.62 },
-            { key: "recommend", label: "Recommend", progress: 0.87 },
+            { key: "monitor",  label: "Monitor"   },
+            { key: "analyze",  label: "Analyze"   },
+            { key: "predict",  label: "Predict"   },
+            { key: "recommend", label: "Recommend" },
           ] as const).map((tab, i, arr) => {
             const isActive = activeTab === tab.key;
             const onClick = () => {
-              const trig = triggerRef.current;
-              if (!trig) return;
-              const target = trig.start + (trig.end - trig.start) * tab.progress;
-              window.scrollTo({ top: target, behavior: "smooth" });
+              setTabRunning(true);
+              setActiveTab(tab.key);
+              setView(tabToView(tab.key));
+              setTabStartedAt(Date.now());
             };
             return (
               <button
@@ -720,6 +745,7 @@ export default function AnalyzeSection() {
                 }}
               >
                 {tab.label}
+                {/* Track */}
                 <span
                   aria-hidden
                   style={{
@@ -728,14 +754,32 @@ export default function AnalyzeSection() {
                     right: 0,
                     bottom: 0,
                     height: "2px",
-                    background: isActive ? "#E85D3A" : "transparent",
-                    boxShadow: isActive
-                      ? "0 0 10px rgba(232,93,58,0.55)"
-                      : "none",
-                    transition:
-                      "background 360ms cubic-bezier(0.22,1,0.36,1), box-shadow 360ms cubic-bezier(0.22,1,0.36,1)",
+                    background: "rgba(255,255,255,0.06)",
                   }}
                 />
+                {/* Progress fill — animates 0 → 100% over 4s on the
+                    active tab; sits at 100% on Recommend (final) since
+                    no auto-advance follows. `tabStartedAt` keys the
+                    animation so a click on the same tab restarts it. */}
+                {isActive && (
+                  <span
+                    key={tabStartedAt}
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      bottom: 0,
+                      height: "2px",
+                      background: "#E85D3A",
+                      boxShadow: "0 0 10px rgba(232,93,58,0.55)",
+                      width: tab.key === "recommend" ? "100%" : "0%",
+                      animation:
+                        tab.key === "recommend"
+                          ? "none"
+                          : `tab-progress ${TAB_MS}ms linear forwards`,
+                    }}
+                  />
+                )}
               </button>
             );
           })}
@@ -1030,9 +1074,45 @@ export default function AnalyzeSection() {
         }}
       >
         <div style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
-        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
-        {/* Chat conversation */}
-        {topic && (
+        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: activeTab === "predict" ? "hidden" : "auto", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: activeTab === "predict" ? "flex-start" : "center", gap: "8px" }}>
+        {/* Standalone Prediction cards — only show when Predict tab is
+            active. Rendered at the TOP of the Mac window so no scroll
+            is needed to reach them. */}
+        {activeTab === "predict" && topic === "revenue" && (
+          <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
+                  <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FCA5A5" }} />
+                </span>
+                <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · 30-day projection</span>
+              </div>
+              <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>89% confidence</span>
+            </div>
+            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+              Overdue stack rebounds to <strong style={{ color: "#FCA5A5" }}>$1.85M</strong> by end of June.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: "6px 12px", fontSize: "11.5px", color: "var(--ink2)", lineHeight: 1.5 }}>
+              <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Pattern</span>
+              <span>May&apos;s ease was a payment burst, not a trend break. 60% of paydowns came from <strong>2 carriers</strong> — the broader backlog kept aging.</span>
+              <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Risk</span>
+              <span><strong style={{ color: "#FCA5A5" }}>$420K</strong> rolls into the 60+ day bucket within 3 weeks if nothing changes — DSO climbs 38 → 51 days and write-off probability hits 14%.</span>
+              <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Window</span>
+              <span>Next 14 days — invoices over $25K that haven&apos;t moved in 3 weeks are the highest-yield targets.</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Recommended</span>
+              <span style={{ fontSize: "12px", color: "var(--ink)", flex: 1 }}>
+                <strong>Casey</strong> (Collections Agent) works the top 8 overdue accounts before Friday.
+              </span>
+              <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$420K saved</span>
+            </div>
+          </div>
+        )}
+
+        {/* Chat conversation — hidden in Predict tab so only the
+            prediction card shows */}
+        {topic && activeTab !== "predict" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
 
             {/* User question bubble */}
@@ -1170,7 +1250,7 @@ export default function AnalyzeSection() {
                               display: "grid", gridTemplateColumns: "90px 150px 1fr 90px", padding: "10px 16px", gap: "8px",
                               borderBottom: i < missedCallRows.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
                               fontSize: "13px", color: "#d4d4d8", alignItems: "center",
-                              opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
+                              opacity: 0, animation: showChart ? `fadeUp 0.22s ${0.06 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
                             }}
                           >
                             <span style={{ color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{r.time}</span>
@@ -1185,39 +1265,6 @@ export default function AnalyzeSection() {
                           </div>
                         ))}
                       </div>
-
-                      {/* Prediction card — only when scroll reaches the Predict tab */}
-                      {activeTab === "predict" && (
-                        <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
-                                <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FCA5A5" }} />
-                              </span>
-                              <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · 30-day projection</span>
-                            </div>
-                            <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>89% confidence</span>
-                          </div>
-                          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-                            Overdue stack rebounds to <strong style={{ color: "#FCA5A5" }}>$1.85M</strong> by end of June.
-                          </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: "6px 12px", fontSize: "11.5px", color: "var(--ink2)", lineHeight: 1.5 }}>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Pattern</span>
-                            <span>May&apos;s ease was a payment burst, not a trend break. 60% of paydowns came from <strong>2 carriers</strong> — the broader backlog kept aging.</span>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Risk</span>
-                            <span><strong style={{ color: "#FCA5A5" }}>$420K</strong> rolls into the 60+ day bucket within 3 weeks if nothing changes — DSO climbs 38 → 51 days and write-off probability hits 14%.</span>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Window</span>
-                            <span>Next 14 days — invoices over $25K that haven&apos;t moved in 3 weeks are the highest-yield targets.</span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                            <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Recommended</span>
-                            <span style={{ fontSize: "12px", color: "var(--ink)", flex: 1 }}>
-                              <strong>Casey</strong> (Collections Agent) works the top 8 overdue accounts before Friday.
-                            </span>
-                            <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$420K saved</span>
-                          </div>
-                        </div>
-                      )}
 
                     </div>
                   )}
@@ -1246,7 +1293,7 @@ export default function AnalyzeSection() {
                                 display: "grid", gridTemplateColumns: "1fr 110px 90px", padding: "10px 16px",
                                 borderBottom: i < carrierAgingRows.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
                                 fontSize: "13px", color: "#d4d4d8", alignItems: "center",
-                                opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
+                                opacity: 0, animation: showChart ? `fadeUp 0.22s ${0.06 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
                               }}
                             >
                               <span style={{ color: "var(--ink)", fontWeight: 500 }}>{r.carrier}</span>
@@ -1256,39 +1303,6 @@ export default function AnalyzeSection() {
                           ))}
                         </div>
                       </div>
-
-                      {/* Prediction card — Predict tab only */}
-                      {activeTab === "predict" && (
-                        <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
-                                <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FCA5A5" }} />
-                              </span>
-                              <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · 9-day projection</span>
-                            </div>
-                            <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>91% confidence</span>
-                          </div>
-                          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-                            State Farm DSO is about to break threshold.
-                          </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: "6px 12px", fontSize: "11.5px", color: "var(--ink2)", lineHeight: 1.5 }}>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Pattern</span>
-                            <span>3 of 7 stuck claims share one adjuster (Mike Tucker). Average response: 14 days, drifting from 9 last quarter.</span>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Risk</span>
-                            <span><strong style={{ color: "#FCA5A5" }}>$72K</strong> of the $164K total crosses into the 60+ aging bucket in 9 days — carrier DSO climbs 72 → 53 days.</span>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Window</span>
-                            <span>Escalate before Friday&apos;s claim review or those 3 claims roll another 30 days.</span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                            <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Recommended</span>
-                            <span style={{ fontSize: "12px", color: "var(--ink)", flex: 1 }}>
-                              <strong>Casey</strong> escalates the 3 Tucker claims to State Farm regional supervisor.
-                            </span>
-                            <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$72K recovered</span>
-                          </div>
-                        </div>
-                      )}
 
                     </div>
                   )}
@@ -1318,7 +1332,7 @@ export default function AnalyzeSection() {
                               display: "grid", gridTemplateColumns: "1fr 110px 100px", padding: "10px 16px",
                               borderBottom: "1px solid rgba(255,255,255,0.05)",
                               fontSize: "13px", color: "#d4d4d8", alignItems: "center",
-                              opacity: 0, animation: showChart ? `fadeUp 0.4s ${0.1 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
+                              opacity: 0, animation: showChart ? `fadeUp 0.22s ${0.06 * i}s cubic-bezier(0.22,1,0.36,1) forwards` : "none",
                             }}
                           >
                             <span style={{ color: "var(--ink)", fontWeight: 500 }}>{r.name}</span>
@@ -1330,39 +1344,6 @@ export default function AnalyzeSection() {
                           + {estimateMore} more
                         </div>
                       </div>
-
-                      {/* Prediction card — Predict tab only */}
-                      {activeTab === "predict" && (
-                        <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
-                                <AlertTriangle className="w-3.5 h-3.5" style={{ color: "#FCA5A5" }} />
-                              </span>
-                              <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.10em", textTransform: "uppercase", color: "#FCA5A5" }}>Prediction · 14-day window</span>
-                            </div>
-                            <span style={{ fontSize: "10px", color: "#FCA5A5", padding: "3px 8px", borderRadius: "999px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>83% confidence</span>
-                          </div>
-                          <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-                            Estimate close rate is falling off a cliff at day 14.
-                          </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "70px 1fr", gap: "6px 12px", fontSize: "11.5px", color: "var(--ink2)", lineHeight: 1.5 }}>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Pattern</span>
-                            <span>Estimates over $25K close <strong style={{ color: "#FCA5A5" }}>3× more often</strong> when re-engaged in the first 14 days. 7 of 12 are already past that window.</span>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Risk</span>
-                            <span>Conversion drops from <strong>38% → 13%</strong> if untouched by Friday. ~$240K of the $483K pipeline at stake.</span>
-                            <span style={{ color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "10px", paddingTop: "1px" }}>Window</span>
-                            <span>Hargrove + Elmwood ($122K combined) cross the threshold this week.</span>
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                            <span style={{ fontSize: "10px", color: "var(--ink3)", letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600 }}>Recommended</span>
-                            <span style={{ fontSize: "12px", color: "var(--ink)", flex: 1 }}>
-                              <strong>Morgan</strong> books second walkthroughs for Hargrove + Elmwood by Thursday.
-                            </span>
-                            <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$122K likely</span>
-                          </div>
-                        </div>
-                      )}
 
                     </div>
                   )}
@@ -1669,6 +1650,10 @@ export default function AnalyzeSection() {
         @keyframes dotPulse {
           0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
           30% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes tab-progress {
+          from { width: 0%; }
+          to   { width: 100%; }
         }
       ` }} />
     </section>

@@ -182,13 +182,12 @@ export function SenseChat({ scrollProgress }: { scrollProgress?: number } = {}) 
     return () => cancelAnimationFrame(rafId);
   }, [typingArmed]);
 
-  // Start typing as soon as the chat enters the viewport — short 500ms
-  // landing buffer so it doesn't feel snappy/glitchy, then the
-  // typewriter takes over. Skipped in scrub mode (scroll drives it).
+  // Start typing 1s after the chat enters the viewport so the user
+  // has a moment to land on the section before the prompt animates in.
   useEffect(() => {
     if (isScrub) return;
     if (!typingArmed) return;
-    const t = setTimeout(() => setIsTyping(true), 500);
+    const t = setTimeout(() => setIsTyping(true), 1000);
     return () => clearTimeout(t);
   }, [typingArmed, isScrub]);
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileText, Receipt, ClipboardList, BarChart3, PenTool, FolderOpen, Shield, Briefcase, Wrench, LucideIcon } from "lucide-react";
-import { useScroll, useTransform, useSpring, motion, MotionValue } from "framer-motion";
+import { motion } from "framer-motion";
 import RollText from "@/components/RollText";
 
 const ICONS: Array<{ x: number; y: number; rot: number; scatterScale: number; Icon: LucideIcon }> = [
@@ -29,45 +29,36 @@ const SPRING = { stiffness: 140, damping: 32, mass: 1.1 };
 
 type FlyingDocProps = {
   i: number;
-  progress: MotionValue<number>;
+  playing: boolean;
 };
 
-function FlyingDoc({ i, progress }: FlyingDocProps) {
+function FlyingDoc({ i, playing }: FlyingDocProps) {
   const from = ICONS[i];
   const to = GRID[i];
   const solid = SOLID[i];
-  const scatterScale = from.scatterScale;
   const Icon = from.Icon;
 
-  const sDrift = i * 0.005;
-
-  // progress 0 = section just entered bottom of viewport
-  // Wrapper is 200vh: first viewport scrolls the icons through entry +
-  // morph (lands by 0.40), second viewport is dwell — formed logo
-  // stays static while the user scrolls — before the section ends.
-  // Icons stay fully opaque from the very start so they never read as
-  // washed out — only the morph (scatter → grid) is scroll-driven.
-  const entryOpacity = 1;
-  const morphStart = 0.18 + sDrift;
-  const morphEnd = 0.40 + sDrift;
-  const iconOpacity = useTransform(progress, [0, 1], [1, 1]);
-
-  const xRaw = useTransform(progress, [morphStart, morphEnd], [from.x, to.x]);
-  const yRaw = useTransform(progress, [morphStart, morphEnd], [from.y, to.y]);
-  const rotRaw = useTransform(progress, [morphStart, morphEnd], [from.rot, 0]);
-  const scaleRaw = useTransform(
-    progress,
-    [0.0, 0.1, morphStart, morphEnd],
-    [scatterScale * 0.7, scatterScale, scatterScale, 1]
-  );
-
-  const x = useSpring(xRaw, SPRING);
-  const y = useSpring(yRaw, SPRING);
-  const rotate = useSpring(rotRaw, SPRING);
-  const scale = useSpring(scaleRaw, SPRING);
+  // Animation fires once when the section enters the viewport: each
+  // tile springs from its scatter pose to its slot in the 3×3 grid.
+  // Per-tile staggered delay so the formation reads as a sequence
+  // rather than a synchronised pop.
+  const stagger = i * 0.06;
 
   return (
     <motion.div
+      initial={{ x: from.x, y: from.y, rotate: from.rot, scale: from.scatterScale }}
+      animate={
+        playing
+          ? { x: to.x, y: to.y, rotate: 0, scale: 1 }
+          : { x: from.x, y: from.y, rotate: from.rot, scale: from.scatterScale }
+      }
+      transition={{
+        type: "spring",
+        stiffness: 140,
+        damping: 32,
+        mass: 1.1,
+        delay: playing ? stagger : 0,
+      }}
       style={{
         position: "absolute",
         width: "96px",
@@ -78,9 +69,7 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
         // right by half a tile.
         left: "-48px",
         top: "-48px",
-        x, y, rotate, scale,
-        opacity: entryOpacity,
-        willChange: "transform, opacity",
+        willChange: "transform",
       }}
     >
       {/* 3D extruded tile — Sense palette, deeper bevel + smoother light */}
@@ -156,12 +145,12 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
         />
       </div>
 
-      {/* White frosted glyph inside — visible scattered, fades at grid */}
-      <motion.div
+      {/* White frosted glyph inside — visible scattered + at grid */}
+      <div
         style={{
           position: "absolute", inset: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
-          opacity: iconOpacity, pointerEvents: "none",
+          pointerEvents: "none",
         }}
       >
         <Icon
@@ -175,7 +164,7 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
               : "drop-shadow(0 2px 3px rgba(180,100,70,0.3))",
           }}
         />
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
@@ -183,28 +172,37 @@ function FlyingDoc({ i, progress }: FlyingDocProps) {
 export default function DocsAnimation() {
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // Drive icon choreography from the wrapper's scroll progress. The
-  // wrapper is 300vh tall so the user gets ~1 viewport to scroll the
-  // icons into the Sense logo, then ~1 viewport of dwell where the
-  // formed logo is static, before the section ends and scroll
-  // continues. Sticky inner pin keeps the visual fixed during dwell.
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end end"],
-  });
+  // Fire the scatter → grid morph the first time the section enters
+  // the viewport. No scroll-scrubbing — once `playing` flips true,
+  // each FlyingDoc springs to its grid slot with a staggered delay.
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setPlaying(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
 
   return (
     <div
       id="docs-section"
       ref={sectionRef}
-      style={{ position: "relative", height: "200vh" }}
+      style={{ position: "relative" }}
     >
       <section
         style={{
-          position: "sticky",
-          top: 0,
-          height: "100vh",
+          position: "relative",
+          minHeight: "100vh",
           background: "var(--bg)",
           display: "flex",
           flexDirection: "column",
@@ -245,7 +243,7 @@ export default function DocsAnimation() {
           >
             <div style={{ position: "relative", width: 0, height: 0 }}>
               {ICONS.map((_, i) => (
-                <FlyingDoc key={i} i={i} progress={scrollYProgress} />
+                <FlyingDoc key={i} i={i} playing={playing} />
               ))}
             </div>
           </div>

@@ -528,13 +528,12 @@ export default function HeroScrollAnimation() {
           </div>
 
           {/* Futuristic workspace (post-swap state). Same 1448×1086
-              canvas as retro, but the table-top line sits at ~65% of
-              this image's canvas (vs ~58% in retro) because of the
-              extra sky/cityscape on top. objectPosition Y=46% (vs the
-              retro's 18%) shifts the modern image down so the table
-              line, plant pot base, and pencil cup base register at the
-              SAME viewport Y as their retro counterparts — the crossfade
-              dissolves in place instead of jumping. */}
+              canvas as retro, with the back-of-desk line sitting around
+              ~60% of this image's canvas (vs ~58% in retro). With
+              objectPosition Y=22% the desk's back edge and the laptop /
+              plant / cup row register at viewport positions close to
+              their retro counterparts, so the crossfade dissolves the
+              horizon roughly in place. */}
           <div
             ref={computerModernRef}
             style={{
@@ -550,7 +549,7 @@ export default function HeroScrollAnimation() {
               fill
               priority
               sizes="100vw"
-              style={{ objectFit: "cover", objectPosition: "center 46%" }}
+              style={{ objectFit: "cover", objectPosition: "center 60%" }}
             />
           </div>
 
