@@ -36,7 +36,7 @@ function useAutoResizeTextarea({
   return { textareaRef, adjustHeight };
 }
 
-const TYPED_TEXT = "what's happening with my overdue invoices";
+const TYPED_TEXT = "How much cash is stuck in unpaid invoices?";
 const TYPED_AUTO_TOPIC = "revenue" as const;
 
 const CHIPS = [

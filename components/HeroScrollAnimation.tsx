@@ -129,7 +129,6 @@ export default function HeroScrollAnimation() {
           rotation: 0.4,
           skewX: -0.35,
           scale: 0.992,
-          ease: "power3.out",
           duration: 0.22,
         },
         0
@@ -137,7 +136,6 @@ export default function HeroScrollAnimation() {
         displaceRef.current,
         {
           attr: { scale: 8 },
-          ease: "power1.in",
           duration: 0.22,
         },
         0
@@ -606,7 +604,7 @@ export default function HeroScrollAnimation() {
           }}
         >
           <TypewriterOnce
-            lines={["Still working", "like it's the", "past?"]}
+            lines={["Running on", "vintage tools?"]}
             startDelayMs={350}
             typeMs={1500}
           />
@@ -619,14 +617,17 @@ export default function HeroScrollAnimation() {
           ref={subTextRef}
           style={{
             position: "absolute",
-            left: "calc(50% - 40px)",
+            left: "50%",
             top: "calc(18vh + max(17.9vh, 13.425vw) + 7vh + 10px)",
             zIndex: 4,
             pointerEvents: "none",
             opacity: 1,
             width: "min(70vw, 880px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             fontFamily: "var(--font-press-start), monospace",
-            fontSize: "clamp(20px, 3.2vw, 44px)",
+            fontSize: "clamp(22px, 3.4vw, 48px)",
             lineHeight: 1.45,
             textAlign: "center",
             color: "#34F26B",
@@ -636,14 +637,11 @@ export default function HeroScrollAnimation() {
             willChange: "opacity, transform",
           }}
         >
-          <span style={{ whiteSpace: "nowrap" }}>
-            <TypewriterOnce
-              lines={["> Scroll into the future"]}
-              startDelayMs={2050}
-              typeMs={1100}
-            />
-            <span className="cli-caret">▌</span>
-          </span>
+          <TypewriterOnce
+            lines={["> Scroll to activate", "the sixth sense."]}
+            startDelayMs={2050}
+            typeMs={1300}
+          />
         </div>
 
         {/* Gradient blinds backdrop — starts at 25% scale around the
@@ -700,7 +698,7 @@ export default function HeroScrollAnimation() {
             zIndex: 6,
             pointerEvents: "none",
             opacity: 0,
-            width: "min(88vw, 880px)",
+            width: "min(94vw, 1280px)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -717,9 +715,10 @@ export default function HeroScrollAnimation() {
               padding: "6px 14px",
               borderRadius: "999px",
               marginBottom: "24px",
-              fontSize: "13px",
-              fontWeight: 500,
-              letterSpacing: "0.02em",
+              fontSize: "12px",
+              fontWeight: 600,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
               color: "rgba(255,255,255,0.95)",
               background: "rgba(10,10,12,0.65)",
               backdropFilter: "blur(18px) saturate(140%)",
@@ -727,45 +726,66 @@ export default function HeroScrollAnimation() {
               border: "1px solid rgba(255,255,255,0.12)",
             }}
           >
-            Zuper Sense &middot; Intelligence Layer
+            Zuper Sense
           </div>
           <h2
             style={{
-              fontSize: "clamp(44px, 5.8vw, 84px)",
+              fontSize: "clamp(40px, 5.4vw, 76px)",
               fontWeight: 500,
               letterSpacing: "-0.035em",
-              lineHeight: 1.04,
+              lineHeight: 1.05,
               margin: 0,
               marginBottom: "20px",
-              maxWidth: "960px",
+              width: "100%",
+              maxWidth: "1100px",
               color: "#FFFFFF",
               fontFeatureSettings: '"ss01", "cv11"',
+              textAlign: "center",
             }}
           >
-            Command center for your roofing operation.
+            The intelligent command center
+            <br />
+            for your roofing business.
           </h2>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: "8px 20px",
+              marginBottom: "18px",
+              fontSize: "clamp(13px, 1.3vw, 16px)",
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              color: "rgba(255,255,255,0.9)",
+            }}
+          >
+            {["Monitor.", "Analyze.", "Predict.", "Recommend.", "Act."].map((v) => (
+              <span key={v}>{v}</span>
+            ))}
+          </div>
           <p
             style={{
               fontSize: "clamp(15px, 1.6vw, 18px)",
               color: "rgba(255,255,255,0.72)",
               lineHeight: 1.5,
               fontWeight: 450,
-              maxWidth: "34rem",
+              maxWidth: "40rem",
               margin: 0,
               marginBottom: "32px",
             }}
           >
-            Type a question, get an answer, deploy an agent.
+            Sense watches your business so you don&apos;t have to, catches what&apos;s about to break, and tells you what to do next.
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: "14px", pointerEvents: "auto" }}>
             {[
               {
-                label: "Request early access",
+                label: "Try Sense",
                 href: "#analyze-section",
                 primary: true,
               },
               {
-                label: "Watch a demo",
+                label: "Watch the demo",
                 href: "#docs-section",
                 primary: false,
               },

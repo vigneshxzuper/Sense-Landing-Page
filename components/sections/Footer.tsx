@@ -1,88 +1,164 @@
 "use client";
 
-type Column = { title: string; links: string[]; extra?: { title: string; links: string[] } };
+/**
+ * Footer — image #38 as the visual base (logo, badges, scene, ZUPER
+ * wordmark, legal bar are all baked into the image). The 5 link
+ * columns + store + social + legal hotspots are overlaid as real
+ * HTML so they are crisp, clickable, and accessible.
+ *
+ * Image dimensions: 1438 × 1688 px.
+ */
+
+type Link = { label: string; href: string };
+type Column = { title: string; links: Link[]; extra?: { title: string; links: Link[] } };
 
 const COLUMNS: Column[] = [
   {
     title: "Company",
-    links: ["About Us", "Careers", "Contact Us", "Leadership", "Partners", "Press & Media", "Security & Compliance"],
+    links: [
+      { label: "About Us", href: "https://beta.zuper.co/about-zuper" },
+      { label: "Careers", href: "https://beta.zuper.co/careers" },
+      { label: "Contact Us", href: "https://beta.zuper.co/contact-us" },
+      { label: "Leadership", href: "https://beta.zuper.co/about-zuper#Leadership" },
+      { label: "Partners", href: "https://beta.zuper.co/partners" },
+      { label: "Press & Media", href: "https://beta.zuper.co/press-media" },
+      { label: "Security & Compliance", href: "https://beta.zuper.co/compliance" },
+    ],
   },
   {
     title: "Platform",
-    links: ["All Features", "Integrations (60+)", "Mobile App", "Zuper Sense", "Zuper Glass", "Zuper Connect", "Zuper Fleet", "Zuper Pay"],
+    links: [
+      { label: "All Features", href: "https://beta.zuper.co/all-solutions" },
+      { label: "Integrations (60+)", href: "https://beta.zuper.co/apps-integration" },
+      { label: "Mobile App", href: "https://beta.zuper.co/field-service-management-app" },
+      { label: "Zuper Sense", href: "https://beta.zuper.co/zuper-sense" },
+      { label: "Zuper Glass", href: "https://beta.zuper.co/zuper-glass" },
+      { label: "Zuper Connect", href: "https://beta.zuper.co/zuper-connect" },
+      { label: "Zuper Fleet", href: "https://beta.zuper.co/zuper-fleet" },
+      { label: "Zuper Pay", href: "https://beta.zuper.co/zuper-pay" },
+    ],
   },
   {
     title: "Industries",
-    links: ["Roofing", "Cleaning", "HVAC", "Pool & Hot Tub", "Landscaping", "Manufacturing", "Maintenance", "Plumbing"],
+    links: [
+      { label: "Roofing", href: "https://beta.zuper.co/roofing-software" },
+      { label: "Cleaning", href: "https://www.zuper.co/cleaning-services-software" },
+      { label: "HVAC", href: "https://beta.zuper.co/hvac-software" },
+      { label: "Pool & Hot Tub", href: "https://www.zuper.co/pool-service-software" },
+      { label: "Landscaping", href: "https://beta.zuper.co/landscaping-software" },
+      { label: "Manufacturing", href: "https://www.zuper.co/manufacturing-management-software" },
+      { label: "Maintenance", href: "https://www.zuper.co/facilities-and-property-maintenance" },
+      { label: "Plumbing", href: "https://beta.zuper.co/plumbing-software" },
+    ],
   },
   {
     title: "Customer",
-    links: ["Customer Login", "Help Center", "Onboarding"],
+    links: [
+      { label: "Customer Login", href: "https://web.zuperpro.com/login" },
+      { label: "Help Center", href: "https://docs.zuper.co/Getting_Started/Welcome_to_Zuper" },
+      { label: "Onboarding", href: "https://beta.zuper.co/onboarding" },
+    ],
     extra: {
       title: "Developer",
-      links: ["Developer Portal", "API Reference", "Status", "Developers' Help"],
+      links: [
+        { label: "Developer Portal", href: "https://developers.zuper.co" },
+        { label: "API Reference", href: "https://developers.zuper.co/reference/getting-started-with-your-api" },
+        { label: "Status", href: "https://zuperpro.statuspage.io/" },
+        { label: "Developers’ Help", href: "https://developers.zuper.co/docs/getting-started" },
+      ],
     },
   },
   {
     title: "Resources",
-    links: ["Blog", "Case Studies", "Customer Stories", "Free Tools", "eBooks", "Research", "Videos"],
+    links: [
+      { label: "Blog", href: "https://beta.zuper.co/blog" },
+      { label: "Case Studies", href: "https://beta.zuper.co/case-studies" },
+      { label: "Customer Stories", href: "https://beta.zuper.co/customer-stories" },
+      { label: "Free Tools", href: "https://beta.zuper.co/free-tools" },
+      { label: "eBooks", href: "https://beta.zuper.co/ebooks" },
+      { label: "Research", href: "https://beta.zuper.co/research" },
+      { label: "Videos", href: "https://beta.zuper.co/videos" },
+    ],
   },
 ];
 
-const LEGAL = ["Support", "Terms of Service", "Privacy Policy", "Compliance", "Google API Disclosure", "Sitemap"];
+const LEGAL: Link[] = [
+  { label: "Support", href: "https://care.zuper.co/portal/en/home" },
+  { label: "Terms of Service", href: "https://beta.zuper.co/terms-conditions" },
+  { label: "Privacy Policy", href: "https://beta.zuper.co/privacy-policy" },
+  { label: "Compliance", href: "https://beta.zuper.co/compliance" },
+  { label: "Google API Disclosure", href: "https://beta.zuper.co/google-api-disclosure" },
+  { label: "Sitemap", href: "https://beta.zuper.co/sitemap" },
+];
 
-function ZuperLogo() {
+type Hotspot = { href: string; label: string; left: number; top: number; width: number; height: number };
+
+const HOTSPOTS: Hotspot[] = [
+  // Trust badges (top right of image)
+  { label: "SOC 2 Type 2", href: "https://beta.zuper.co/compliance", left: 66.5, top: 17.2, width: 6.1, height: 5.8 },
+  { label: "ISO 27001", href: "https://beta.zuper.co/compliance", left: 73.3, top: 17.2, width: 6.1, height: 5.8 },
+  { label: "Great Place To Work", href: "https://beta.zuper.co/careers", left: 80.1, top: 17.2, width: 6.7, height: 5.8 },
+
+  // Store badges
+  { label: "Google Play", href: "https://play.google.com/store/apps/details?id=co.zuper.android", left: 14.6, top: 48.6, width: 12.4, height: 5.1 },
+  { label: "App Store", href: "https://apps.apple.com/in/app/zuper-field-service-your-way/id1633081340", left: 27.7, top: 48.6, width: 12.7, height: 5.1 },
+
+  // Social icons
+  { label: "Facebook", href: "https://www.facebook.com/zuperpro/", left: 70.9, top: 51.0, width: 1.7, height: 1.5 },
+  { label: "Instagram", href: "https://www.instagram.com/zuperpro/", left: 73.8, top: 51.0, width: 1.9, height: 1.5 },
+  { label: "YouTube", href: "https://www.youtube.com/@zuperofficial", left: 77.0, top: 51.0, width: 2.0, height: 1.5 },
+  { label: "LinkedIn", href: "https://www.linkedin.com/company/zuperpro/", left: 80.4, top: 51.0, width: 1.9, height: 1.5 },
+  { label: "X", href: "https://twitter.com/zuperpro", left: 83.5, top: 51.0, width: 1.7, height: 1.5 },
+
+  // Bottom legal links
+  ...LEGAL.map((l, i) => {
+    const positions = [
+      { left: 30.2, width: 3.9 },
+      { left: 35.1, width: 8.4 },
+      { left: 44.5, width: 8.3 },
+      { left: 55.3, width: 6.8 },
+      { left: 63.3, width: 11.8 },
+      { left: 76.2, width: 4.4 },
+    ];
+    return { href: l.href, label: l.label, left: positions[i].left, top: 97.8, width: positions[i].width, height: 1.6 };
+  }),
+];
+
+function FooterColumn({ title, links }: { title: string; links: Link[] }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-      <svg width="44" height="36" viewBox="0 0 44 36" fill="none">
-        <g>
-          <path d="M4 4 L17 4 L13 16 L0 16 Z" fill="#fff" />
-          <path d="M22 4 L35 4 L31 16 L18 16 Z" fill="#fff" />
-          <path d="M2 20 L15 20 L11 32 L-2 32 Z" fill="#fff" transform="translate(2 0)" />
-          <path d="M20 20 L33 20 L29 32 L16 32 Z" fill="#fff" transform="translate(2 0)" />
-        </g>
-      </svg>
-      <span style={{ fontSize: "32px", fontWeight: 800, letterSpacing: "0.04em", color: "#fff", lineHeight: 1 }}>
-        ZUPER
-        <sup style={{ fontSize: "10px", fontWeight: 600, marginLeft: 2, top: "-1.2em" }}>™</sup>
-      </span>
+    <div>
+      <div
+        style={{
+          fontSize: "20px",
+          fontWeight: 700,
+          color: "#fff",
+          marginBottom: "22px",
+          letterSpacing: "-0.01em",
+        }}
+      >
+        {title}
+      </div>
+      {links.map((link) => (
+        <a
+          key={link.label}
+          href={link.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "block",
+            fontSize: "16px",
+            color: "rgba(230,236,245,0.82)",
+            marginBottom: "16px",
+            textDecoration: "none",
+            transition: "color 160ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(230,236,245,0.82)")}
+        >
+          {link.label}
+        </a>
+      ))}
     </div>
-  );
-}
-
-function SocialIcon({ name }: { name: string }) {
-  const c = "rgba(255,255,255,0.85)";
-  const common = { width: 26, height: 26, viewBox: "0 0 26 26", fill: "none" } as const;
-  return (
-    <svg {...common}>
-      <circle cx="13" cy="13" r="12" stroke={c} strokeWidth="1.2" />
-      {name === "facebook" && (
-        <path d="M14.4 9h1.4V7.1h-1.8c-1.5 0-2.4.9-2.4 2.4V11h-1.4v1.9h1.4V20h2v-7.1h1.6l.3-1.9h-1.9V9.7c0-.4.2-.7.8-.7z" fill={c} />
-      )}
-      {name === "instagram" && (
-        <>
-          <rect x="7.5" y="7.5" width="11" height="11" rx="3" stroke={c} strokeWidth="1.2" />
-          <circle cx="13" cy="13" r="2.6" stroke={c} strokeWidth="1.2" />
-          <circle cx="16.2" cy="9.8" r="0.7" fill={c} />
-        </>
-      )}
-      {name === "youtube" && (
-        <>
-          <rect x="6.5" y="9" width="13" height="8" rx="2" stroke={c} strokeWidth="1.2" />
-          <path d="M11.5 11.2v3.6l3.2-1.8-3.2-1.8z" fill={c} />
-        </>
-      )}
-      {name === "linkedin" && (
-        <>
-          <rect x="7" y="10.5" width="2" height="7.5" fill={c} />
-          <circle cx="8" cy="8.2" r="1.1" fill={c} />
-          <path d="M10.6 10.5h1.9v1c.5-.7 1.3-1.2 2.3-1.2 1.6 0 2.6 1 2.6 2.9V18H15.5v-3.6c0-.9-.3-1.5-1.2-1.5-.8 0-1.3.6-1.3 1.5V18h-2.4v-7.5z" fill={c} />
-        </>
-      )}
-      {name === "x" && (
-        <path d="M8.5 8.5l9 9M17.5 8.5l-9 9" stroke={c} strokeWidth="1.4" strokeLinecap="round" />
-      )}
-    </svg>
   );
 }
 
@@ -92,210 +168,93 @@ export default function Footer() {
       style={{
         position: "relative",
         background: "#050d23",
-        color: "#E6ECF5",
         overflow: "hidden",
-        paddingTop: "120px",
+        lineHeight: 0,
+        fontFamily: "var(--font-inter), 'Inter', system-ui, sans-serif",
       }}
     >
-
-      <div
-        style={{
-          position: "relative",
-          maxWidth: "1280px",
-          margin: "0 auto",
-          padding: "0 56px",
-          zIndex: 2,
-        }}
-      >
-        {/* Top: logo + badges */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingBottom: "28px",
-            borderBottom: "1px solid rgba(255,255,255,0.12)",
-          }}
-        >
-          <ZuperLogo />
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/footer/badge1.png" alt="SOC 2 Type 2" style={{ height: "84px", width: "auto", objectFit: "contain" }} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/footer/badge2.png" alt="ISO 27001" style={{ height: "84px", width: "auto", objectFit: "contain" }} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/footer/badge3.png" alt="Great Place To Work" style={{ height: "84px", width: "auto", objectFit: "contain" }} />
-          </div>
-        </div>
-
-        {/* 5-column link grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
-            gap: "32px",
-            paddingTop: "52px",
-            paddingBottom: "44px",
-          }}
-        >
-          {COLUMNS.map((col) => (
-            <div key={col.title}>
-              <FooterColumn title={col.title} links={col.links} />
-              {col.extra && (
-                <div style={{ marginTop: "32px" }}>
-                  <FooterColumn title={col.extra.title} links={col.extra.links} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Store badges + socials */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingTop: "28px",
-            paddingBottom: "40px",
-            borderTop: "1px solid rgba(255,255,255,0.12)",
-          }}
-        >
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <a href="#" style={{ display: "block" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/footer/google-play.png" alt="Google Play" style={{ height: "48px", width: "auto", display: "block" }} />
-            </a>
-            <a href="#" style={{ display: "block" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/footer/app-store.png" alt="App Store" style={{ height: "48px", width: "auto", display: "block" }} />
-            </a>
-          </div>
-          <div style={{ display: "flex", gap: "18px", alignItems: "center" }}>
-            {["facebook", "instagram", "youtube", "linkedin", "x"].map((s) => (
-              <a key={s} href="#" aria-label={s} style={{ display: "inline-flex", opacity: 0.9 }}>
-                <SocialIcon name={s} />
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Big ZUPER wordmark sitting on top of houses */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          marginTop: "12px",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1280px",
-            margin: "0 auto",
-            padding: "0 24px",
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/footer/zuper-bigtext.png"
-            alt=""
-            style={{ width: "100%", height: "auto", display: "block", opacity: 0.9 }}
-          />
-        </div>
-      </div>
-
-      {/* Houses scene overlapping the wordmark */}
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          marginTop: "-120px",
-          zIndex: 3,
-        }}
-      >
+      <div style={{ position: "relative", width: "100%" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/footer/sky-bg.png"
+          src="/footer/footer-image.png"
           alt=""
           style={{ width: "100%", height: "auto", display: "block" }}
         />
-      </div>
 
-      {/* Bottom legal bar */}
-      <div
-        style={{
-          position: "relative",
-          background: "#050d23",
-          zIndex: 4,
-          padding: "20px 56px",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
-        }}
-      >
+        {/* 5-column link grid overlaid in the empty band between top
+            divider and store-row divider. */}
         <div
           style={{
-            maxWidth: "1280px",
-            margin: "0 auto",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "20px",
-            fontSize: "13px",
-            color: "rgba(230,236,245,0.75)",
+            position: "absolute",
+            top: "24.8%",
+            left: "13%",
+            right: "13%",
+            zIndex: 2,
+            lineHeight: 1.4,
           }}
         >
-          <div>© 2026 Zuper Inc</div>
-          <div style={{ display: "flex", gap: "40px", flexWrap: "wrap" }}>
-            {LEGAL.map((l) => (
-              <a
-                key={l}
-                href="#"
-                style={{ color: "rgba(230,236,245,0.75)", textDecoration: "none", transition: "color 0.15s" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(230,236,245,0.75)")}
-              >
-                {l}
-              </a>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: "24px",
+            }}
+            className="footer-link-grid"
+          >
+            {COLUMNS.map((col) => (
+              <div key={col.title}>
+                <FooterColumn title={col.title} links={col.links} />
+                {col.extra && (
+                  <div style={{ marginTop: "28px" }}>
+                    <FooterColumn title={col.extra.title} links={col.extra.links} />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
-      </div>
-    </footer>
-  );
-}
 
-function FooterColumn({ title, links }: { title: string; links: string[] }) {
-  return (
-    <div>
-      <div
-        style={{
-          fontSize: "17px",
-          fontWeight: 700,
-          color: "#fff",
-          marginBottom: "20px",
-        }}
-      >
-        {title}
+        {/* Clickable hotspots for badges / store / social / legal */}
+        {HOTSPOTS.map((h, i) => (
+          <a
+            key={`${h.label}-${i}`}
+            href={h.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={h.label}
+            style={{
+              position: "absolute",
+              top: `${h.top}%`,
+              left: `${h.left}%`,
+              width: `${h.width}%`,
+              height: `${h.height}%`,
+              cursor: "pointer",
+              borderRadius: "4px",
+              zIndex: 2,
+              transition: "background-color 160ms cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+            }}
+          />
+        ))}
       </div>
-      {links.map((link) => (
-        <a
-          key={link}
-          href="#"
-          style={{
-            display: "block",
-            fontSize: "14px",
-            color: "rgba(230,236,245,0.78)",
-            marginBottom: "12px",
-            textDecoration: "none",
-            transition: "color 0.15s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(230,236,245,0.78)")}
-        >
-          {link}
-        </a>
-      ))}
-    </div>
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @media (max-width: 900px) {
+          .footer-link-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 18px 16px !important;
+          }
+        }
+      `,
+        }}
+      />
+    </footer>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import SenseLogo from "@/components/SenseLogo";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -41,7 +42,7 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
         pointerEvents: "none",
         zIndex: 0,
         overflow: "hidden",
-        transform: `translateY(${parallax + 80}px)`,
+        transform: `translateY(${parallax + 130}px)`,
         willChange: "transform",
       }}
     >
@@ -54,7 +55,7 @@ function BrowserOutlineBackdrop({ revealed, parallax }: { revealed: boolean; par
             ? "translateY(0) scale(1)"
             : "translateY(40px) scale(0.97)",
           transition:
-            "opacity 900ms cubic-bezier(0.32, 0.72, 0, 1), transform 1100ms cubic-bezier(0.32, 0.72, 0, 1)",
+            "opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 520ms cubic-bezier(0.22, 1, 0.36, 1)",
           willChange: "transform, opacity",
         }}
       >
@@ -134,7 +135,7 @@ type Topic = "performance" | "sla" | "revenue" | null;
 /* ── TOPIC CONFIG ── */
 const TOPIC_CONFIG = {
   revenue: {
-    question: "What's happening with my overdue invoices",
+    question: "How much cash is stuck in unpaid invoices?",
     aiText: "Over the last 3 months, overdue invoices climbed hard into April before easing in May. Amount Overdue peaked at $2.10M in April across 40 overdue invoices, up from $1.45M in March and just $18.3K in February — the main signal is that the backlog built fast in March and April, even though the oldest debt was actually in February at 89 max days past due.",
   },
   performance: {
@@ -359,7 +360,7 @@ export default function AnalyzeSection() {
   // content snaps the moment the tab crosses its scroll threshold.
   const offsetFor = (_own: "ask" | "analyze" | "act") => 0;
   const isActive = (own: "ask" | "analyze" | "act") => own === view;
-  const viewTransition = "none";
+  const viewTransition = "opacity 240ms cubic-bezier(0.22, 1, 0.36, 1)";
 
   // Auto-click choreography. Triggers when all stepper items have
   // completed: cursor flies in (560ms), presses (180ms), then the button
@@ -466,69 +467,120 @@ export default function AnalyzeSection() {
       const el = askRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      setStepperShown(rect.top < 240);
+      // Visible only while the Mac-window block is in the viewport.
+      // Hides on scroll past so the tab bar doesn't bleed over the
+      // sections below (Radar / Anywhere).
+      const inFrame = rect.top < 240 && rect.bottom > 80;
+      setStepperShown(inFrame);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Timer-driven tab progression. Section is no longer scroll-pinned;
-  // when askRef enters the viewport, each tab gets 4s before auto-
-  // advancing to the next. The progress bar under the active tab fills
-  // over that 4s window. Clicking a tab jumps to it and restarts the
-  // 4s timer for that tab. Once Recommend completes, the cycle stops
-  // (no looping). `tabKey` increments on each manual click so the
-  // progress bar's CSS animation restarts.
+  // Scroll-driven tab progression. The Mac-window block is pinned
+  // while the user scrolls through it; scroll progress maps to the
+  // active tab. Clicking a tab scrolls to the corresponding progress
+  // position within the pinned region.
   const TAB_ORDER = ["monitor", "analyze", "predict", "recommend"] as const;
-  const TAB_MS = 4000;
-  const [tabStartedAt, setTabStartedAt] = useState<number>(0);
-  const [tabRunning, setTabRunning] = useState(false);
-  const tabTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerRef = useRef<ScrollTrigger | null>(null);
+  const [tabProgress, setTabProgress] = useState(0); // 0..1 progress within the current tab range
 
   const tabToView = (t: typeof TAB_ORDER[number]): "ask" | "analyze" | "act" =>
     t === "monitor" ? "ask" : t === "recommend" ? "act" : "analyze";
 
-  const advanceFrom = (current: typeof TAB_ORDER[number]) => {
-    const idx = TAB_ORDER.indexOf(current);
-    if (idx < 0 || idx >= TAB_ORDER.length - 1) return;
-    const next = TAB_ORDER[idx + 1];
-    setActiveTab(next);
-    setView(tabToView(next));
-    setTabStartedAt(Date.now());
-  };
+  // Pin askRef and map scroll progress to active tab + per-tab progress.
+  // Pinning is desktop-only — on mobile we let the section scroll
+  // naturally and use IntersectionObserver per tab block instead.
+  useGSAP(() => {
+    if (!askRef.current) return;
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    if (isMobile) return;
+    const trigger = ScrollTrigger.create({
+      trigger: askRef.current,
+      start: "top top",
+      end: "+=320%",
+      pin: true,
+      pinSpacing: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => {
+        const p = self.progress;
+        const idx = Math.min(TAB_ORDER.length - 1, Math.floor(p * TAB_ORDER.length));
+        const nextTab = TAB_ORDER[idx];
+        const nextView = tabToView(nextTab);
+        setActiveTab((prev) => (prev === nextTab ? prev : nextTab));
+        setView((prev) => (prev === nextView ? prev : nextView));
+        const local = p * TAB_ORDER.length - idx; // 0..1 within current tab
+        setTabProgress(Math.max(0, Math.min(1, local)));
+      },
+    });
+    triggerRef.current = trigger;
+    return () => {
+      trigger.kill();
+      triggerRef.current = null;
+    };
+  }, { scope: sectionRef });
 
-  // Start the cycle when the Mac-window block first enters the viewport.
+  // Mobile fallback: when no pin, just cycle through tabs on a timer
+  // once the section enters the viewport so the story still progresses.
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 768px)").matches) return;
     const el = askRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !tabRunning) {
-          setTabRunning(true);
-          setActiveTab("monitor");
-          setView("ask");
-          setTabStartedAt(Date.now());
-          io.disconnect();
-        }
-      },
-      { threshold: 0.35 }
-    );
+    let cycleTimer: ReturnType<typeof setInterval> | null = null;
+    let progressTimer: ReturnType<typeof setInterval> | null = null;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        let idx = 0;
+        setActiveTab(TAB_ORDER[0]);
+        setView(tabToView(TAB_ORDER[0]));
+        setTabProgress(0);
+        const dur = 4000;
+        const tick = 50;
+        let elapsed = 0;
+        progressTimer = setInterval(() => {
+          elapsed += tick;
+          setTabProgress(Math.min(1, elapsed / dur));
+        }, tick);
+        cycleTimer = setInterval(() => {
+          elapsed = 0;
+          idx = idx + 1;
+          if (idx >= TAB_ORDER.length) {
+            if (cycleTimer) clearInterval(cycleTimer);
+            if (progressTimer) clearInterval(progressTimer);
+            setTabProgress(1);
+            return;
+          }
+          setActiveTab(TAB_ORDER[idx]);
+          setView(tabToView(TAB_ORDER[idx]));
+        }, dur);
+        io.disconnect();
+      }
+    }, { threshold: 0.3 });
     io.observe(el);
-    return () => io.disconnect();
-  }, [tabRunning]);
-
-  // Schedule the next-tab advance whenever the active tab (re)starts.
-  useEffect(() => {
-    if (!tabRunning) return;
-    if (activeTab === "recommend") return;
-    if (tabTimerRef.current) clearTimeout(tabTimerRef.current);
-    tabTimerRef.current = setTimeout(() => advanceFrom(activeTab), TAB_MS);
     return () => {
-      if (tabTimerRef.current) clearTimeout(tabTimerRef.current);
+      if (cycleTimer) clearInterval(cycleTimer);
+      if (progressTimer) clearInterval(progressTimer);
+      io.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, tabStartedAt, tabRunning]);
+  }, []);
+
+  // Click a tab → scroll to that tab's range start within the pinned
+  // region. On mobile (no pin), just set the active tab directly.
+  const jumpToTab = (key: typeof TAB_ORDER[number]) => {
+    const trigger = triggerRef.current;
+    if (!trigger) {
+      setActiveTab(key);
+      setView(tabToView(key));
+      setTabProgress(0);
+      return;
+    }
+    const idx = TAB_ORDER.indexOf(key);
+    const target = trigger.start + ((trigger.end - trigger.start) * idx) / TAB_ORDER.length + 4;
+    window.scrollTo({ top: target, behavior: "smooth" });
+  };
 
   // Stage setup driven by scroll-derived view. Replaces the old
   // auto-deploy timer — entering analyze fires the typewriter, entering
@@ -644,14 +696,26 @@ export default function AnalyzeSection() {
               fontWeight: 500,
               letterSpacing: "-0.035em",
               lineHeight: 1.06,
-              margin: "0 auto 36px",
+              margin: "0 auto 16px",
               maxWidth: "720px",
               color: "var(--ink)",
               fontFeatureSettings: '"ss01", "cv11"',
             }}
           >
-            All it takes is one right question.
+            Begin with the question.
           </h2>
+          <p
+            style={{
+              fontSize: "clamp(16px, 1.6vw, 19px)",
+              lineHeight: 1.55,
+              color: "var(--ink2)",
+              maxWidth: "640px",
+              margin: "0 auto 36px",
+              fontWeight: 450,
+            }}
+          >
+            Whatever you&apos;ve been wondering about the business, you can finally just ask.
+          </p>
           <SenseChat />
         </div>
 
@@ -681,6 +745,7 @@ export default function AnalyzeSection() {
         }}
       >
         <div
+          className="analyze-tab-bar"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
@@ -704,12 +769,7 @@ export default function AnalyzeSection() {
             { key: "recommend", label: "Recommend" },
           ] as const).map((tab, i, arr) => {
             const isActive = activeTab === tab.key;
-            const onClick = () => {
-              setTabRunning(true);
-              setActiveTab(tab.key);
-              setView(tabToView(tab.key));
-              setTabStartedAt(Date.now());
-            };
+            const onClick = () => jumpToTab(tab.key);
             return (
               <button
                 key={tab.key}
@@ -757,26 +817,19 @@ export default function AnalyzeSection() {
                     background: "rgba(255,255,255,0.06)",
                   }}
                 />
-                {/* Progress fill — animates 0 → 100% over 4s on the
-                    active tab; sits at 100% on Recommend (final) since
-                    no auto-advance follows. `tabStartedAt` keys the
-                    animation so a click on the same tab restarts it. */}
+                {/* Progress fill — driven by scroll progress within the
+                    current tab's range. 0% at tab start, 100% by next tab. */}
                 {isActive && (
                   <span
-                    key={tabStartedAt}
                     aria-hidden
                     style={{
                       position: "absolute",
                       left: 0,
                       bottom: 0,
                       height: "2px",
-                      background: "#E85D3A",
-                      boxShadow: "0 0 10px rgba(232,93,58,0.55)",
-                      width: tab.key === "recommend" ? "100%" : "0%",
-                      animation:
-                        tab.key === "recommend"
-                          ? "none"
-                          : `tab-progress ${TAB_MS}ms linear forwards`,
+                      background: "linear-gradient(90deg, #E85D3A 0%, #F87E5C 100%)",
+                      boxShadow: "0 0 12px rgba(232,93,58,0.7), 0 0 4px rgba(232,93,58,0.9)",
+                      width: `${tabProgress * 100}%`,
                     }}
                   />
                 )}
@@ -790,13 +843,89 @@ export default function AnalyzeSection() {
           window. Shown when view === "ask" (Monitor / Analyze tabs).
           Overdue-invoices card surfaces once the user's auto-cursor
           presses Add-to-Radar in the intro SenseChat. */}
-      <div ref={askRef} style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0", position: "relative" }}>
+      <div ref={askRef} style={{ minHeight: "112vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0", position: "relative" }}>
         <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={parallaxOffset} />
+        {/* Per-tab copy — sits below the sticky stepper, above the Mac
+            window. Swaps based on activeTab with a soft crossfade. */}
+        <div
+          style={{
+            position: "absolute",
+            top: "200px",
+            left: 0,
+            right: 0,
+            zIndex: 3,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: "0 24px",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            key={activeTab}
+            style={{
+              width: "min(720px, 92vw)",
+              textAlign: "center",
+              animation: "tab-copy-in 480ms cubic-bezier(0.22,1,0.36,1) both",
+            }}
+          >
+            {(() => {
+              const COPY: Record<typeof activeTab, { h2: string; sub: string }> = {
+                monitor: {
+                  h2: "Make decisions you don’t second-guess.",
+                  sub: "Radar is your personal, live view of the business. Every pinned card refreshes itself in real time, so nothing important goes stale or slips by.",
+                },
+                analyze: {
+                  h2: "See what’s behind every insight.",
+                  sub: "Tap any Radar card to see the breakdown. Each follow-up question takes you one layer deeper.",
+                },
+                predict: {
+                  h2: "Stop fighting fires you could’ve prevented.",
+                  sub: "The early signals show up long before any of it shows up as a problem, so you can move before it costs you.",
+                },
+                recommend: {
+                  h2: "Know exactly what to do, every time.",
+                  sub: "Each prediction arrives with the action drawn up and the projected outcome attached.",
+                },
+              };
+              const c = COPY[activeTab];
+              return (
+                <>
+                  <h2
+                    style={{
+                      fontSize: "clamp(22px, 2.4vw, 30px)",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.15,
+                      color: "var(--ink)",
+                      margin: 0,
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {c.h2}
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: "clamp(12.5px, 1.05vw, 14.5px)",
+                      lineHeight: 1.5,
+                      color: "var(--ink2)",
+                      maxWidth: "560px",
+                      margin: "0 auto",
+                      fontWeight: 450,
+                    }}
+                  >
+                    {c.sub}
+                  </p>
+                </>
+              );
+            })()}
+          </div>
+        </div>
         <div
           style={{
             position: "absolute",
             inset: 0,
-            paddingTop: "160px",
+            paddingTop: "330px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -808,7 +937,7 @@ export default function AnalyzeSection() {
           }}
         >
           <div style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
-            <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "22px 32px", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "36px 40px 24px", display: "flex", flexDirection: "column", justifyContent: "flex-start", gap: "14px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 12px", borderRadius: "999px", background: "rgba(232,93,58,0.10)", border: "1px solid rgba(232,93,58,0.30)", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>
                   Task Radar
@@ -817,6 +946,7 @@ export default function AnalyzeSection() {
               </div>
 
               <div
+                className="analyze-dashboard-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
@@ -840,33 +970,32 @@ export default function AnalyzeSection() {
                     display: "flex",
                     flexDirection: "column",
                     gap: "12px",
-                    opacity: overdueOnRadar ? 1 : 0,
-                    transform: overdueOnRadar ? "translateY(0) scale(1)" : "translateY(8px) scale(0.98)",
+                    opacity: 1,
+                    transform: "translateY(0) scale(1)",
                     transition: "opacity 520ms cubic-bezier(0.22,1,0.36,1), transform 520ms cubic-bezier(0.22,1,0.36,1)",
-                    boxShadow: overdueOnRadar ? "0 0 0 2px rgba(232,93,58,0.25), 0 10px 24px -10px rgba(232,93,58,0.35)" : "none",
+                    boxShadow: "0 0 0 2px rgba(232,93,58,0.25), 0 10px 24px -10px rgba(232,93,58,0.35)",
+                    position: "relative",
                   }}
                 >
-                  {overdueOnRadar && (
-                    <span
-                      aria-hidden
-                      style={{
-                        position: "absolute",
-                        top: "10px",
-                        right: "10px",
-                        fontSize: "9px",
-                        fontWeight: 600,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "#FFD7C5",
-                        background: "rgba(232,93,58,0.18)",
-                        border: "1px solid rgba(232,93,58,0.5)",
-                        padding: "2px 7px",
-                        borderRadius: "999px",
-                      }}
-                    >
-                      New
-                    </span>
-                  )}
+                  <span
+                    aria-hidden
+                    style={{
+                      position: "absolute",
+                      top: "10px",
+                      right: "10px",
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "#FFD7C5",
+                      background: "rgba(232,93,58,0.18)",
+                      border: "1px solid rgba(232,93,58,0.5)",
+                      padding: "2px 7px",
+                      borderRadius: "999px",
+                    }}
+                  >
+                    New
+                  </span>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(232,93,58,0.14)" }}>
                       <Receipt className="w-3.5 h-3.5" style={{ color: "#E85D3A" }} />
@@ -917,7 +1046,7 @@ export default function AnalyzeSection() {
                 </div>
 
                 {/* Dormant estimates — donut chart of aging buckets */}
-                <div style={{ gridArea: "dormant", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px", justifyContent: "center" }}>
+                <div className="card-depth" style={{ gridArea: "dormant", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px", justifyContent: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <Clock className="w-4 h-4" style={{ color: "#FCA5A5" }} />
                     <span style={{ fontSize: "13px", fontWeight: 600, color: "#FCA5A5" }}>Dormant estimates</span>
@@ -975,7 +1104,7 @@ export default function AnalyzeSection() {
                 </div>
 
                 {/* Stuck supplements — horizontal bars by carrier */}
-                <div style={{ gridArea: "stuck", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px", justifyContent: "center" }}>
+                <div className="card-depth" style={{ gridArea: "stuck", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px", justifyContent: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <FileText className="w-4 h-4" style={{ color: "#FCD34D" }} />
@@ -1005,7 +1134,7 @@ export default function AnalyzeSection() {
 
                 {/* Missed calls — sparkline of last 7 days, full-width
                     row anchoring the bottom of the dashboard. */}
-                <div style={{ gridArea: "missed", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div className="card-depth" style={{ gridArea: "missed", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <Phone className="w-4 h-4" style={{ color: "#C4B5FD" }} />
@@ -1062,7 +1191,7 @@ export default function AnalyzeSection() {
         style={{
           position: "absolute",
           inset: 0,
-          paddingTop: "160px",
+          paddingTop: "330px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1074,12 +1203,12 @@ export default function AnalyzeSection() {
         }}
       >
         <div style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
-        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: activeTab === "predict" ? "hidden" : "auto", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: activeTab === "predict" ? "flex-start" : "center", gap: "8px" }}>
+        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: activeTab === "predict" ? "hidden" : "auto", padding: "36px 40px 24px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "flex-start", gap: "14px" }}>
         {/* Standalone Prediction cards — only show when Predict tab is
             active. Rendered at the TOP of the Mac window so no scroll
             is needed to reach them. */}
         {activeTab === "predict" && topic === "revenue" && (
-          <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "16px 18px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)" }}>
+          <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "18px 22px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)", maxWidth: "880px", width: "100%", marginLeft: "auto", marginRight: "auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
@@ -1157,20 +1286,16 @@ export default function AnalyzeSection() {
                   width: "36px",
                   height: "36px",
                   borderRadius: "10px",
-                  background: "linear-gradient(135deg, #E85D3A, #C4472A)",
+                  background: "rgba(232,93,58,0.10)",
+                  border: "1px solid rgba(232,93,58,0.25)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
-                  boxShadow: "0 0 16px rgba(232,93,58,0.3)",
+                  boxShadow: "0 0 14px rgba(232,93,58,0.2)",
                 }}
               >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <rect x="1" y="1" width="7" height="7" rx="1.5" fill="white" />
-                  <rect x="10" y="1" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.6" />
-                  <rect x="1" y="10" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.6" />
-                  <rect x="10" y="10" width="7" height="7" rx="1.5" fill="white" fillOpacity="0.3" />
-                </svg>
+                <SenseLogo size={20} />
               </div>
 
               <div style={{ flex: 1 }}>
@@ -1368,7 +1493,7 @@ export default function AnalyzeSection() {
         style={{
           position: "absolute",
           inset: 0,
-          paddingTop: "160px",
+          paddingTop: "330px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1383,10 +1508,10 @@ export default function AnalyzeSection() {
         {/* overflow: visible so the live activity card can transform
             out of the mac frame on its way to the radar section without
             being clipped at the frame edge. */}
-        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "visible", padding: "20px 40px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: "8px" }}>
+        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "visible", padding: "36px 40px 24px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "flex-start", gap: "10px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "12px" }}>
             {/* Agent + steps */}
-            <div style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none" }}>
+            <div className="card-depth" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "14px" }}>
                 <div
                   style={{
@@ -1414,7 +1539,7 @@ export default function AnalyzeSection() {
                   <div style={{ fontSize: "12px", color: "var(--ink3)" }}>{ACT_VARIANTS[deployedTopic].agent.role}</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px #22C55E" }} />
+                  <div className="live-dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22C55E" }} />
                   <span style={{ fontSize: "10px", color: "#4ADE80" }}>{ACT_VARIANTS[deployedTopic].agent.status}</span>
                 </div>
               </div>
@@ -1447,7 +1572,7 @@ export default function AnalyzeSection() {
                 RadarSection's scroll-driven transform can move THIS card
                 (the only one) into a placeholder slot in the next
                 section as the user scrolls. */}
-            <div id="live-activity-source" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", boxShadow: "none", willChange: "transform", transformOrigin: "center center" }}>
+            <div id="live-activity-source" className="card-depth" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px", willChange: "transform", transformOrigin: "center center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
                 <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22C55E", boxShadow: "0 0 6px #22C55E" }} />
                 <span style={{ fontSize: "10px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{ACT_VARIANTS[deployedTopic].agent.name} · Live activity</span>
@@ -1620,7 +1745,7 @@ export default function AnalyzeSection() {
           </div>
 
           {/* Recap */}
-          <div style={{ marginTop: "12px", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "16px" }}>
+          <div style={{ marginTop: "8px", background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "14px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
               {ACT_VARIANTS[deployedTopic].recap.map((r) => (
                 <div key={r.label} style={{ background: "rgba(34,197,94,0.06)", borderRadius: "10px", padding: "10px", textAlign: "center" }}>
@@ -1651,9 +1776,9 @@ export default function AnalyzeSection() {
           0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
           30% { opacity: 1; transform: scale(1); }
         }
-        @keyframes tab-progress {
-          from { width: 0%; }
-          to   { width: 100%; }
+        @keyframes tab-copy-in {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       ` }} />
     </section>

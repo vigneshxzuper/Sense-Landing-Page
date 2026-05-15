@@ -208,7 +208,7 @@ export default function HeroSectionStatic({ externalBooted, hideContent = false 
         </div>
       )}
 
-      <div style={{ position: "relative", zIndex: 2, display: hideContent ? "none" : "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "880px" }}>
+      <div style={{ position: "relative", zIndex: 2, display: hideContent ? "none" : "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: "1280px" }}>
         <div
           style={{
             display: "inline-flex",
@@ -217,9 +217,10 @@ export default function HeroSectionStatic({ externalBooted, hideContent = false 
             padding: "7px 16px",
             borderRadius: "999px",
             marginBottom: "28px",
-            fontSize: "13px",
-            fontWeight: 500,
-            letterSpacing: "0.02em",
+            fontSize: "12px",
+            fontWeight: 600,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
             color: isDark ? "rgba(255,255,255,0.95)" : "var(--ink)",
             background: isDark ? "rgba(10,10,12,0.65)" : "rgba(255,255,255,0.9)",
             backdropFilter: "blur(18px) saturate(140%)",
@@ -230,16 +231,17 @@ export default function HeroSectionStatic({ externalBooted, hideContent = false 
             transition: "opacity 1.1s cubic-bezier(0.22,1,0.36,1), transform 1.1s cubic-bezier(0.22,1,0.36,1), color 0.5s",
           }}
         >
-          Zuper Sense &middot; Intelligence Layer
+          Zuper Sense
         </div>
 
         <h1
           style={{
-            fontSize: "clamp(48px, 7.5vw, 96px)",
+            fontSize: "clamp(44px, 6.4vw, 84px)",
             fontWeight: 500,
             letterSpacing: "-0.03em",
             lineHeight: 1.05,
             textAlign: "center",
+            width: "100%",
             maxWidth: "1100px",
             marginBottom: "24px",
             marginTop: 0,
@@ -254,15 +256,38 @@ export default function HeroSectionStatic({ externalBooted, hideContent = false 
             minHeight: "calc(2em * 1.05)",
           }}
         >
-          Command center for your roofing operation.
+          The intelligent command center
+          <br />
+          for your roofing business.
         </h1>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "10px 22px",
+            marginBottom: "20px",
+            fontSize: "clamp(14px, 1.4vw, 17px)",
+            fontWeight: 600,
+            letterSpacing: "0.04em",
+            color: "rgba(255,255,255,0.92)",
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? "translateY(0)" : "translateY(10px)",
+            transition: "opacity 1.3s cubic-bezier(0.22,1,0.36,1) 0.16s, transform 1.3s cubic-bezier(0.22,1,0.36,1) 0.16s",
+          }}
+        >
+          {["Monitor.", "Analyze.", "Predict.", "Recommend.", "Act."].map((v) => (
+            <span key={v}>{v}</span>
+          ))}
+        </div>
 
         <p
           style={{
-            fontSize: "clamp(18px, 2.2vw, 22px)",
-            color: "rgba(255,255,255,0.88)",
+            fontSize: "clamp(17px, 2vw, 20px)",
+            color: "rgba(255,255,255,0.82)",
             textAlign: "center",
-            maxWidth: "36rem",
+            maxWidth: "44rem",
             lineHeight: 1.55,
             fontWeight: 450,
             margin: 0,
@@ -271,7 +296,7 @@ export default function HeroSectionStatic({ externalBooted, hideContent = false 
             transition: "opacity 1.3s cubic-bezier(0.22,1,0.36,1) 0.22s, transform 1.3s cubic-bezier(0.22,1,0.36,1) 0.22s",
           }}
         >
-          Type a question, get an answer, deploy an agent.
+          Sense watches your business so you don&apos;t have to, catches what&apos;s about to break, and tells you what to do next.
         </p>
 
         <div
@@ -286,8 +311,8 @@ export default function HeroSectionStatic({ externalBooted, hideContent = false 
           }}
         >
           {[
-            { label: "Request early access", href: "#analyze-section", icon: <Sparkles style={{ width: 14, height: 14 }} />, variant: "primary" as const },
-            { label: "Watch a demo", href: "#docs-section", icon: <BookOpen style={{ width: 14, height: 14 }} />, variant: "secondary" as const },
+            { label: "Try Sense", href: "#analyze-section", icon: <Sparkles style={{ width: 14, height: 14 }} />, variant: "primary" as const },
+            { label: "Watch the demo", href: "#docs-section", icon: <BookOpen style={{ width: 14, height: 14 }} />, variant: "secondary" as const },
           ].map((btn) => {
             const primary = btn.variant === "primary";
             const innerBg = primary ? (isDark ? "#ffffff" : "#111111") : isDark ? "rgba(20,20,20,0.9)" : "rgba(245,245,245,0.95)";

@@ -8,6 +8,7 @@ import NavZuperAIMenu from "./NavZuperAIMenu";
 import NavProductMenu from "./NavProductMenu";
 import NavSolutionsMenu from "./NavSolutionsMenu";
 import NavResourcesMenu from "./NavResourcesMenu";
+import SenseLogo from "./SenseLogo";
 
 const NAV_LINKS: Array<{ label: string; menu?: "zuperAI" | "product" | "solutions" | "resources" }> = [
   { label: "Zuper AI", menu: "zuperAI" },
@@ -84,20 +85,7 @@ export default function Navbar() {
       >
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "2px",
-              width: "16px",
-              height: "16px",
-            }}
-          >
-            <div style={{ borderRadius: "2.5px", background: "#E85D3A" }} />
-            <div style={{ borderRadius: "2.5px", background: "#E85D3A", opacity: 0.6 }} />
-            <div style={{ borderRadius: "2.5px", background: "#E85D3A", opacity: 0.6 }} />
-            <div style={{ borderRadius: "2.5px", background: "#E85D3A", opacity: 0.3 }} />
-          </div>
+          <SenseLogo size={20} />
           <span
             style={{
               fontSize: "14px",
@@ -112,7 +100,7 @@ export default function Navbar() {
         </div>
 
         {/* Center links */}
-        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+        <div className="nav-center-links" style={{ display: "flex", alignItems: "center", gap: "2px" }}>
           {NAV_LINKS.map((link) => {
             const isOpen = openMenu === link.label;
             return (
@@ -140,7 +128,7 @@ export default function Navbar() {
                     padding: "6px 12px",
                     borderRadius: "8px",
                     transition:
-                      "background 360ms cubic-bezier(0.32, 0.72, 0, 1), color 360ms cubic-bezier(0.32, 0.72, 0, 1)",
+                      "background 200ms cubic-bezier(0.22, 1, 0.36, 1), color 200ms cubic-bezier(0.22, 1, 0.36, 1)",
                     whiteSpace: "nowrap",
                     cursor: "pointer",
                     fontFamily: "inherit",
@@ -165,7 +153,7 @@ export default function Navbar() {
                       height: 12,
                       opacity: 0.7,
                       transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                      transition: "transform 420ms cubic-bezier(0.32, 0.72, 0, 1)",
+                      transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
                     }}
                   />
                 </button>
@@ -207,6 +195,7 @@ export default function Navbar() {
           <button
             onClick={toggle}
             aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
+            className="nav-press"
             style={{
               display: "flex",
               alignItems: "center",
@@ -217,7 +206,7 @@ export default function Navbar() {
               border: "none",
               background: "transparent",
               cursor: "pointer",
-              transition: "background 0.15s",
+              transition: "background 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1)",
               flexShrink: 0,
             }}
             onMouseEnter={(e) => {
@@ -238,7 +227,7 @@ export default function Navbar() {
 
           <a
             href="#analyze-section"
-            className="btn-roll"
+            className="btn-roll nav-press"
             onClick={(e) => {
               e.preventDefault();
               document.querySelector("#analyze-section")?.scrollIntoView({ behavior: "smooth" });
@@ -256,7 +245,7 @@ export default function Navbar() {
               textDecoration: "none",
               whiteSpace: "nowrap",
               border: `1px solid ${isDark ? "rgba(255,255,255,0.15)" : "transparent"}`,
-              transition: "opacity 0.15s, background 0.5s, color 0.5s, border-color 0.5s",
+              transition: "opacity 200ms cubic-bezier(0.22, 1, 0.36, 1), transform 140ms cubic-bezier(0.22, 1, 0.36, 1), background 500ms, color 500ms, border-color 500ms",
               flexShrink: 0,
             }}
             onMouseEnter={(e) => {

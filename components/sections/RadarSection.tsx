@@ -212,7 +212,7 @@ export default function RadarSection() {
         {/* Top dashboard row — Live Activity landing slot + Crews today.
             Both sit at the top so the card flying in from the Act view
             settles at the top of the dashboard rather than buried below. */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px", marginTop: "40px" }}>
+        <div className="radar-grid-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px", marginTop: "40px" }}>
           <div
             ref={targetSlotRef}
             aria-hidden
@@ -223,15 +223,17 @@ export default function RadarSection() {
               minHeight: "100%",
             }}
           />
-          <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(0) }}>
+          <div className="card-depth" style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", position: "relative", overflow: "hidden", ...stagger(0) }}>
             <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "14px" }}>Crews today</div>
             {CREWS.map((c, i) => (
               <div
                 key={c.name}
+                className="row-hover"
                 style={{
                   display: "flex", alignItems: "center", gap: "10px",
                   marginBottom: i < CREWS.length - 1 ? "10px" : 0,
-                  paddingBottom: i < CREWS.length - 1 ? "10px" : 0,
+                  paddingTop: "4px",
+                  paddingBottom: i < CREWS.length - 1 ? "14px" : "4px",
                   borderBottom: i < CREWS.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
                 }}
               >
@@ -244,17 +246,20 @@ export default function RadarSection() {
                   </div>
                   <div style={{ fontSize: "11px", color: "var(--ink3)" }}>{c.status}</div>
                 </div>
-                <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: c.active ? "#22C55E" : "#F59E0B", boxShadow: c.active ? "0 0 6px #22C55E" : "none", flexShrink: 0 }} />
+                <div
+                  className={c.active ? "live-dot" : "live-dot-amber"}
+                  style={{ width: "7px", height: "7px", borderRadius: "50%", background: c.active ? "#22C55E" : "#F59E0B", flexShrink: 0 }}
+                />
               </div>
             ))}
           </div>
         </div>
 
         {/* Bottom grid: Revenue MTD + Next 24 hours side-by-side. */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div className="radar-grid-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
 
           {/* Revenue MTD vs target */}
-          <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(8) }}>
+          <div className="card-depth" style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", position: "relative", overflow: "hidden", ...stagger(8) }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
               <div>
                 <div style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Revenue MTD vs. target</div>
@@ -262,9 +267,19 @@ export default function RadarSection() {
               </div>
               <span style={{ fontSize: "12px", color: "var(--green)", background: "rgba(34,197,94,0.1)", padding: "3px 8px", borderRadius: "6px" }}>+$52K</span>
             </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "100px" }}>
+            <div className="sparkline-in" style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "100px" }}>
               {[45, 58, 42, 65, 55, 70, 62, 78, 72, 85, 80, 90, 85, 92].map((v, i) => (
-                <div key={i} style={{ flex: 1, height: `${v}%`, background: i >= 12 ? "#E85D3A" : "rgba(255,255,255,0.08)", borderRadius: "2px 2px 0 0", transition: "height 0.6s" }} />
+                <div
+                  key={i}
+                  className="sparkline-bar"
+                  style={{
+                    flex: 1,
+                    height: `${v}%`,
+                    background: i >= 12 ? "#E85D3A" : "rgba(255,255,255,0.08)",
+                    borderRadius: "2px 2px 0 0",
+                    transitionDelay: `${i * 30}ms`,
+                  }}
+                />
               ))}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "14px" }}>
@@ -281,26 +296,23 @@ export default function RadarSection() {
 
           {/* Next 24 hours — sits next to Revenue MTD. Compact 2×2 grid
               of the upcoming jobs. */}
-          <div style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", boxShadow: "none", position: "relative", overflow: "hidden", ...stagger(9) }}>
+          <div className="card-depth" style={{ ...card, background: "var(--card-bg)", border: "1px solid var(--card-border)", position: "relative", overflow: "hidden", ...stagger(9) }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <CalendarDays className="w-4 h-4 text-[#3F3F46]" />
               <span style={{ fontSize: "11px", color: "var(--ink3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Next 24 hours</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <div className="radar-jobs-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               {UPCOMING_JOBS.map((j) => (
                 <div
                   key={j.title}
+                  className="card-depth card-depth-lift"
                   style={{
                     background: "var(--card-bg)",
                     border: "1px solid var(--card-border)",
                     borderRadius: "10px",
                     padding: "12px",
-                    transition: "all 0.2s",
                     cursor: "default",
-                    boxShadow: "none",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
                 >
                   <div style={{ fontSize: "12px", color: "var(--ink)", fontWeight: 500, marginBottom: "6px", lineHeight: 1.3 }}>{j.title}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>

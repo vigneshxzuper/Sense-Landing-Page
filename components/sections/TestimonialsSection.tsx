@@ -36,6 +36,7 @@ function initials(name: string) {
 function QuoteCard({ quote }: { quote: Quote }) {
   return (
     <div
+      className="card-depth"
       style={{
         flexShrink: 0,
         width: "min(420px, 78vw)",
@@ -43,7 +44,6 @@ function QuoteCard({ quote }: { quote: Quote }) {
         borderRadius: "14px",
         background: "var(--card-bg)",
         border: "1px solid var(--card-border)",
-        boxShadow: "0 24px 60px -28px rgba(0,0,0,0.55)",
         display: "flex",
         flexDirection: "column",
         gap: "14px",

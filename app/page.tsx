@@ -1,6 +1,7 @@
 import HeroScrollAnimation from "@/components/HeroScrollAnimation";
 import AnalyzeSection from "@/components/sections/AnalyzeSection";
 import RadarSection from "@/components/sections/RadarSection";
+import IntelligenceSection from "@/components/sections/IntelligenceSection";
 import DocsAnimation from "@/components/sections/DocsAnimation";
 import AnywhereSection from "@/components/sections/AnywhereSection";
 import TestimonialsSection from "@/components/sections/TestimonialsSection";
@@ -15,6 +16,7 @@ export default function Page() {
         <AnalyzeSection />
         {/* ActSection now lives inside AnalyzeSection's Mac window */}
         <RadarSection />
+        <IntelligenceSection />
         <AnywhereSection />
         <TestimonialsSection />
         <DocsAnimation />
