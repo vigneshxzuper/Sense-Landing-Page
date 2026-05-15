@@ -435,6 +435,36 @@ export default function AnalyzeSection() {
   const hasTriggered = useRef(false);
   const sectionRef = useRef<HTMLElement>(null);
   const askRef = useRef<HTMLDivElement>(null);
+  const chatPinRef = useRef<HTMLDivElement>(null);
+  const [chatProgress, setChatProgress] = useState(0);
+
+  // Pin the prompt block while it plays. ScrollTrigger maps the 200%
+  // pin region to chatProgress 0 → 1. SenseChat reads this and
+  // scrubs every beat of typing → cursor → result → "Added to Radar".
+  // High-water-mark: scrolling back UP does not rewind. Only a page
+  // reload resets it (chatProgress state initialises to 0 on mount).
+  useGSAP(() => {
+    if (!chatPinRef.current) return;
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+      // No pin on mobile — page is short and pinning fights touch scroll.
+      setChatProgress(1);
+      return;
+    }
+    const trigger = ScrollTrigger.create({
+      trigger: chatPinRef.current,
+      start: "top top",
+      end: "+=180%",
+      pin: true,
+      pinSpacing: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      scrub: 1,
+      onUpdate: (self) => {
+        setChatProgress((prev) => Math.max(prev, self.progress));
+      },
+    });
+    return () => trigger.kill();
+  }, { scope: sectionRef });
 
   // SenseChat fires `sense-radar-added` once its auto-cursor presses
   // the Add-to-Radar pill. Flip a flag so the rest of the section can
@@ -635,6 +665,17 @@ export default function AnalyzeSection() {
     }
   }, [askProgress, backdropRevealed]);
 
+  // Content inside the Mac window fades in ~600ms AFTER the chrome
+  // has revealed, so the user sees the window arrive first and then
+  // the dashboard / chat / agent populate.
+  const [contentRevealed, setContentRevealed] = useState(false);
+  useEffect(() => {
+    if (backdropRevealed && !contentRevealed) {
+      const t = setTimeout(() => setContentRevealed(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, [backdropRevealed, contentRevealed]);
+
   const parallaxOffset = (askProgress - 0.5) * -50;
 
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -678,12 +719,17 @@ export default function AnalyzeSection() {
           the intro doesn't fade out; the user scrolls past it on
           their own to reach the Mac window below. */}
       <div
+        ref={chatPinRef}
         style={{
-          padding: "120px 0 80px",
+          padding: "80px 24px",
           maxWidth: "900px",
           margin: "0 auto",
           textAlign: "center",
           position: "relative",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
         }}
       >
         <div>
@@ -707,13 +753,36 @@ export default function AnalyzeSection() {
               lineHeight: 1.55,
               color: "var(--ink2)",
               maxWidth: "640px",
-              margin: "0 auto 36px",
+              margin: "0 auto 24px",
               fontWeight: 450,
             }}
           >
             Whatever you&apos;ve been wondering about the business, you can finally just ask.
           </p>
-          <SenseChat />
+
+          {/* "Watch how" micro-label — fades out as typing begins so it
+              doesn't compete with the chat itself. */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "32px",
+              fontSize: "11px",
+              fontWeight: 600,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "var(--ink3)",
+              opacity: chatProgress < 0.1 ? 1 : 0,
+              transform: chatProgress < 0.1 ? "translateY(0)" : "translateY(-4px)",
+              transition: "opacity 320ms cubic-bezier(0.22,1,0.36,1), transform 320ms cubic-bezier(0.22,1,0.36,1)",
+            }}
+          >
+            <span style={{ animation: "watch-bob 1.6s ease-in-out infinite" }}>↓</span>
+            Watch how
+          </div>
+
+          <SenseChat scrollProgress={chatProgress} />
         </div>
 
       </div>
@@ -856,6 +925,9 @@ export default function AnalyzeSection() {
             alignItems: "center",
             padding: "0 24px",
             pointerEvents: "none",
+            opacity: contentRevealed ? 1 : 0,
+            transform: contentRevealed ? "translateY(0)" : "translateY(8px)",
+            transition: "opacity 520ms cubic-bezier(0.22,1,0.36,1), transform 520ms cubic-bezier(0.22,1,0.36,1)",
           }}
         >
           <div
@@ -927,7 +999,7 @@ export default function AnalyzeSection() {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 2,
-            opacity: isActive("ask") ? 1 : 0,
+            opacity: isActive("ask") && contentRevealed ? 1 : 0,
             transform: `translateY(${offsetFor("ask")}%)`,
             pointerEvents: view === "ask" ? "auto" : "none",
             transition: viewTransition,
@@ -1192,7 +1264,7 @@ export default function AnalyzeSection() {
           alignItems: "center",
           justifyContent: "center",
           zIndex: 2,
-          opacity: isActive("analyze") ? 1 : 0,
+          opacity: isActive("analyze") && contentRevealed ? 1 : 0,
           transform: `translateY(${offsetFor("analyze")}%)`,
           pointerEvents: view === "analyze" ? "auto" : "none",
           transition: viewTransition,
@@ -1494,7 +1566,7 @@ export default function AnalyzeSection() {
           alignItems: "center",
           justifyContent: "center",
           zIndex: 2,
-          opacity: isActive("act") ? 1 : 0,
+          opacity: isActive("act") && contentRevealed ? 1 : 0,
           transform: `translateY(${offsetFor("act")}%)`,
           pointerEvents: view === "act" ? "auto" : "none",
           transition: viewTransition,
@@ -1775,6 +1847,10 @@ export default function AnalyzeSection() {
         @keyframes tab-copy-in {
           from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes watch-bob {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(3px); }
         }
       ` }} />
     </section>
