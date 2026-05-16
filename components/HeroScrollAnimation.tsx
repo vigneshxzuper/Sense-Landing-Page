@@ -22,7 +22,7 @@ import RollText from "@/components/RollText";
  * and floaty; `ease: "none"` keeps the mapping linear inside the lerp.
  */
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
@@ -30,6 +30,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import type { GradientBlindsProps } from "./GradientBlinds";
+import HeroSectionStatic from "./sections/HeroSectionStatic";
 
 const GradientBlinds = dynamic<GradientBlindsProps>(
   () =>
@@ -69,6 +70,17 @@ const ZOOM_ORIGIN = "50% 51%";
 const ZOOM_END = 4;
 
 export default function HeroScrollAnimation() {
+  // Mobile bail-out: skip the CRT zoom and render the static
+  // "intelligent command center" hero directly. Detected once on
+  // mount to avoid hydration mismatch.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const heroRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const fileLayerRef = useRef<HTMLDivElement>(null);
@@ -90,6 +102,10 @@ export default function HeroScrollAnimation() {
 
   useGSAP(
     () => {
+      // On mobile, skip the entire CRT zoom timeline.
+      if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+        return;
+      }
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: heroRef.current,
@@ -309,6 +325,12 @@ export default function HeroScrollAnimation() {
     },
     { scope: heroRef }
   );
+
+  // Mobile: skip the CRT zoom scene entirely. Show the static hero
+  // (intelligent roofing command center) as the entry point.
+  if (isMobile) {
+    return <HeroSectionStatic externalBooted />;
+  }
 
   return (
     <section

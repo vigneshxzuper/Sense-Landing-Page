@@ -11,22 +11,40 @@
 
 type Quote = { text: string; name: string; role: string; tone: string };
 
+// Person → tone color (consistent across both rows)
+const TONES = {
+  kent: "#F59E0B",
+  cooper: "#22C55E",
+  jt: "#A78BFA",
+  john: "#38BDF8",
+  noe: "#F472B6",
+  chris: "#FB7185",
+} as const;
+
 const QUOTES_TOP: Quote[] = [
-  { text: "It feels like a senior analyst is sitting next to me — except they never sleep.", name: "Sarah Chen", role: "VP Operations · Crestline Roofing", tone: "#F59E0B" },
-  { text: "I asked it where my cash was stuck, and it told me in four seconds.",              name: "Marcus Patel", role: "CFO · Hartwell Builders", tone: "#22C55E" },
-  { text: "Half the questions I used to ask my CFO, I now type into Sense.",                  name: "Diana Okafor", role: "COO · Stormline Restoration", tone: "#A78BFA" },
-  { text: "We replaced four dashboards with one prompt.",                                     name: "Rafael Mendes", role: "Director of Field Ops · Beacon Pro", tone: "#38BDF8" },
-  { text: "Surfaced a $40K invoice we'd completely missed. Paid for itself the first week.",  name: "Jordan Reeves", role: "Controller · Vanguard Roofing", tone: "#E85D3A" },
-  { text: "Onboarding new ops people takes two hours instead of two weeks.",                  name: "Priya Sharma", role: "Head of People · Northbound Trades", tone: "#FBBF24" },
+  { text: "It is basically ChatGPT in your roofing CRM.",                                                          name: "Kent Panovec",          role: "COO / Owner · Maven Roofing",                tone: TONES.kent },
+  { text: "Zuper Sense already knows roofing — you don't have to teach it.",                                       name: "Cooper J. Knutson",     role: "I.T. Administrator · Russell Quality Roofing", tone: TONES.cooper },
+  { text: "Build dashboards in seconds, not days.",                                                                name: "JT Ulyatt",             role: "CEO · Maven Roofing",                        tone: TONES.jt },
+  { text: "I could not be happier to never have to build a custom reporting dashboard ever again.",                name: "John A. Marrah III",    role: "Mindful Leader · MARASUN",                   tone: TONES.john },
+  { text: "It's really amazing, it's mind-blowing, and it's a game changer.",                                      name: "Chris Little",          role: "Office Manager · Dickinson Roofing",         tone: TONES.chris },
+  { text: "How powerful is it to have your own LLM sitting on top of your data?",                                  name: "JT Ulyatt",             role: "CEO · Maven Roofing",                        tone: TONES.jt },
+  { text: "Sense allows us to work on numbers from right now — from this morning.",                                name: "Cooper J. Knutson",     role: "I.T. Administrator · Russell Quality Roofing", tone: TONES.cooper },
+  { text: "There's so many AI things out there, but none of them are integrated natively into your CRM.",          name: "Noe Madrigal",          role: "President · A&A Roofing Services",           tone: TONES.noe },
+  { text: "We've never had the ability to get those questions answered instantaneously.",                          name: "Kent Panovec",          role: "COO / Owner · Maven Roofing",                tone: TONES.kent },
+  { text: "Zuper Sense: ask, analyze, act. The command center for the trades.",                                    name: "John A. Marrah III",    role: "Mindful Leader · MARASUN",                   tone: TONES.john },
 ];
 
 const QUOTES_BOTTOM: Quote[] = [
-  { text: "I trust the answer because it shows me the rows it pulled.",                       name: "Elliot Vasquez", role: "Data Lead · Ridgepoint Roofing", tone: "#34D399" },
-  { text: "It writes the email, calls the customer, and updates the CRM. I just approve.",    name: "Mia Henderson", role: "CSR Manager · Apex Exteriors", tone: "#C4B5FD" },
-  { text: "First AI feature in our stack that I actually use every single day.",              name: "Devon Brooks", role: "Owner · Brooks & Sons Roofing", tone: "#FB7185" },
-  { text: "I stopped exporting CSVs three months ago.",                                       name: "Lena Rossi", role: "Ops Analyst · Truss Capital", tone: "#60A5FA" },
-  { text: "It found the dispatch I'd dropped before the customer noticed.",                   name: "Tobias Klein", role: "Service Director · Cedar Roofing Co.", tone: "#F472B6" },
-  { text: "Quietly the most useful thing my team adopted this year.",                         name: "Avery Nakamura", role: "GM · Summit Storm Group", tone: "#A3E635" },
+  { text: "I thought it was a gimmick. It's a game changer.",                                                      name: "Kent Panovec",          role: "COO / Owner · Maven Roofing",                tone: TONES.kent },
+  { text: "I don't really pull reports anymore.",                                                                  name: "Cooper J. Knutson",     role: "I.T. Administrator · Russell Quality Roofing", tone: TONES.cooper },
+  { text: "AI actions on data is a game changer.",                                                                 name: "JT Ulyatt",             role: "CEO · Maven Roofing",                        tone: TONES.jt },
+  { text: "It's no more playing defense.",                                                                         name: "Cooper J. Knutson",     role: "I.T. Administrator · Russell Quality Roofing", tone: TONES.cooper },
+  { text: "The speed to getting information is so much quicker.",                                                  name: "John A. Marrah III",    role: "Mindful Leader · MARASUN",                   tone: TONES.john },
+  { text: "Zuper Sense monitors, analyzes, predicts, and recommends everything I need to run my business.",        name: "JT Ulyatt",             role: "CEO · Maven Roofing",                        tone: TONES.jt },
+  { text: "Within minutes I've built over six KPI dashboards.",                                                    name: "JT Ulyatt",             role: "CEO · Maven Roofing",                        tone: TONES.jt },
+  { text: "Zuper is how you can get on top of your game; Sense is how you stay there.",                            name: "Cooper J. Knutson",     role: "I.T. Administrator · Russell Quality Roofing", tone: TONES.cooper },
+  { text: "We can work proactively instead of just reactively.",                                                   name: "Cooper J. Knutson",     role: "I.T. Administrator · Russell Quality Roofing", tone: TONES.cooper },
+  { text: "I don't ever have to go in and ask or make a chart again.",                                             name: "Chris Little",          role: "Office Manager · Dickinson Roofing",         tone: TONES.chris },
 ];
 
 function initials(name: string) {

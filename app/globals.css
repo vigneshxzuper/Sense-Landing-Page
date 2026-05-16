@@ -496,8 +496,45 @@ a, button { cursor: pointer; }
     gap: 12px !important;
   }
 
-  /* ── Anywhere Section ── */
-  .anywhere-stage { padding: 0 16px !important; }
+  /* ── Anywhere Section: stack cards vertically on mobile ── */
+  .anywhere-stage {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 40px 16px 80px !important;
+  }
+  .anywhere-stack-wrap {
+    position: relative !important;
+    inset: auto !important;
+    padding: 24px 0 0 !important;
+    display: block !important;
+  }
+  .anywhere-deck {
+    aspect-ratio: auto !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+  }
+  .anywhere-card {
+    position: relative !important;
+    inset: auto !important;
+    aspect-ratio: 2000 / 1152;
+    width: 100% !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Kill heavy entrance animations on mobile — cards are static.
+     Decorative loops (marquee, CRT glitch, live-dot pulse) stay so
+     the page doesn't feel dead. */
+  .sparkline-bar,
+  .crt-boot-inner,
+  .btn-glow-primary,
+  .btn-glow-secondary { animation: none !important; transform: none !important; transition: none !important; }
+  .sparkline-bar { transform: scaleY(1) !important; }
+  .crt-boot-inner { opacity: 1 !important; }
 
   /* ── Testimonials ── */
   .testimonial-card { width: 84vw !important; padding: 22px !important; }

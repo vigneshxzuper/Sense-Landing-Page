@@ -38,6 +38,15 @@ export default function AnywhereSection() {
 
   useGSAP(
     () => {
+      // No pin/scrub on mobile — let the cards stack vertically and
+      // scroll naturally so they're all readable.
+      if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+        cardRefs.current.forEach((el) => {
+          if (!el) return;
+          gsap.set(el, { clearProps: "all" });
+        });
+        return;
+      }
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -121,6 +130,7 @@ export default function AnywhereSection() {
       <section
         ref={sectionRef}
         data-no-snap
+        className="anywhere-stage"
         style={{
           position: "relative",
           height: "100vh",
@@ -182,6 +192,7 @@ export default function AnywhereSection() {
           </h2>
         </div>
         <div
+          className="anywhere-stack-wrap"
           style={{
             position: "absolute",
             inset: "200px 0 0 0",
@@ -193,6 +204,7 @@ export default function AnywhereSection() {
           }}
         >
           <div
+            className="anywhere-deck"
             style={{
               position: "relative",
               width: "min(1180px, 86vw)",
@@ -207,6 +219,7 @@ export default function AnywhereSection() {
               return (
                 <div
                   key={i}
+                  className="anywhere-card"
                   ref={(el) => {
                     cardRefs.current[i] = el;
                   }}
