@@ -483,8 +483,8 @@ a, button { cursor: pointer; }
   }
   .analyze-dashboard-grid {
     grid-template-columns: 1fr !important;
-    grid-template-areas: "monitor" "dormant" "stuck" "missed" !important;
-    gap: 12px !important;
+    grid-template-areas: "overdue" "dormant" "stuck" "missed" !important;
+    gap: 14px !important;
   }
   /* IntelligenceSection — 2-col grid collapses */
   .intelligence-grid {
@@ -549,8 +549,21 @@ a, button { cursor: pointer; }
   /* ── Testimonials ── */
   .testimonial-card { width: 84vw !important; padding: 22px !important; }
 
-  /* ── Docs / Flying icons ── */
-  .docs-grid-stage { transform: scale(0.92); }
+  /* ── Docs / Flying icons — formation stacks ABOVE the title ── */
+  .docs-split {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+    padding: 0 24px !important;
+    text-align: center;
+  }
+  .docs-formation {
+    height: 220px !important;
+    order: -1 !important;
+  }
+  .docs-grid-stage { transform: scale(0.45); }
+  .docs-copy { text-align: center; }
+  .docs-copy h2,
+  .docs-copy p { margin-left: auto !important; margin-right: auto !important; }
 
   /* ── Sections: cap horizontal padding ── */
   section { padding-left: 16px; padding-right: 16px; }

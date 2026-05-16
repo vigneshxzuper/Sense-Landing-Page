@@ -217,6 +217,7 @@ export default function DocsAnimation() {
             on the right. Both columns sit on top of the aurora/grain
             backdrop layers. */}
         <div
+          className="docs-split"
           style={{
             position: "relative",
             zIndex: 3,
@@ -232,6 +233,7 @@ export default function DocsAnimation() {
         >
           {/* Left — icons formation anchor */}
           <div
+            className="docs-formation"
             style={{
               position: "relative",
               height: "520px",
@@ -241,7 +243,7 @@ export default function DocsAnimation() {
               pointerEvents: "none",
             }}
           >
-            <div style={{ position: "relative", width: 0, height: 0 }}>
+            <div className="docs-grid-stage" style={{ position: "relative", width: 0, height: 0 }}>
               {ICONS.map((_, i) => (
                 <FlyingDoc key={i} i={i} playing={playing} />
               ))}
@@ -250,6 +252,7 @@ export default function DocsAnimation() {
 
           {/* Right — title + button */}
           <div
+            className="docs-copy"
             style={{
               position: "relative",
               zIndex: 5,
