@@ -421,6 +421,10 @@ a, button { cursor: pointer; }
   opacity: 1;
 }
 
+/* Mobile-only section headers — hidden by default, revealed in the
+   mobile media query inside the analyze section. */
+.mobile-section-header { display: none; }
+
 /* ──────────────────────────────────────────────────────────────
    MOBILE RESPONSIVE OVERRIDES
    Inline styles in JSX prevent natural media queries from working.
@@ -438,8 +442,9 @@ a, button { cursor: pointer; }
   .radar-grid-two-col { grid-template-columns: 1fr !important; gap: 12px !important; }
   .radar-jobs-grid { grid-template-columns: 1fr !important; }
 
-  /* ── Analyze Section: drop the Mac chrome on mobile, render the
-     Monitor view's dashboard cards as a flat radar-style stack ── */
+  /* ── Analyze Section: drop the Mac chrome on mobile, render all 4
+     sections (Monitor, Analyze, Predict, Recommend) stacked as flat
+     radar-style cards with their own headers ── */
   .mac-window-section {
     min-height: auto !important;
     padding: 8px 16px 24px !important;
@@ -447,29 +452,69 @@ a, button { cursor: pointer; }
   }
   .mac-window-chrome,
   .mac-window-tab-copy,
-  .mac-window-stepper,
+  .mac-window-stepper { display: none !important; }
+
+  /* All three overlays flow vertically */
+  .ask-view,
   .analyze-view,
-  .act-view { display: none !important; }
-  .ask-view {
+  .act-view {
     position: relative !important;
     inset: auto !important;
     padding: 0 !important;
     opacity: 1 !important;
     transform: none !important;
     display: block !important;
+    pointer-events: auto !important;
+    margin-bottom: 48px;
   }
-  .ask-view .mac-frame {
+
+  /* Strip Mac frame shell */
+  .mac-view .mac-frame {
     width: 100% !important;
     height: auto !important;
     max-height: none !important;
   }
-  .ask-view .mac-inner {
+  .mac-view .mac-inner {
     position: relative !important;
     inset: auto !important;
     padding: 0 !important;
     overflow: visible !important;
-    gap: 12px !important;
+    gap: 14px !important;
   }
+
+  /* Reveal mobile-only headers */
+  .mobile-section-header { display: block !important; margin-bottom: 14px; }
+  .mobile-section-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    color: #E85D3A;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .mobile-section-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.18;
+    margin: 0 0 6px;
+  }
+  .mobile-section-sub {
+    font-size: 14px;
+    color: var(--ink2);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* Reorder analyze-inner so chat (Analyze) shows BEFORE prediction
+     (Predict). Use flex order: chat-block lower than predict-block. */
+  .analyze-inner { display: flex !important; flex-direction: column !important; }
+  .analyze-inner .chat-block { order: 1; }
+  .analyze-inner .predict-block { order: 2; }
+  /* Inserted headers travel with their respective blocks via order */
+  .analyze-inner .analyze-header { order: 1; }
+  .analyze-inner .predict-header { order: 2; }
 
   /* ── Analyze Section / Mac window ── */
   .analyze-tab-bar { font-size: 13px !important; }
@@ -557,10 +602,10 @@ a, button { cursor: pointer; }
     text-align: center;
   }
   .docs-formation {
-    height: 220px !important;
+    height: 180px !important;
     order: -1 !important;
   }
-  .docs-grid-stage { transform: scale(0.45); }
+  .docs-grid-stage { transform: scale(0.35); }
   .docs-copy { text-align: center; }
   .docs-copy h2,
   .docs-copy p { margin-left: auto !important; margin-right: auto !important; }

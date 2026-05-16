@@ -437,6 +437,14 @@ export default function AnalyzeSection() {
   const askRef = useRef<HTMLDivElement>(null);
   const chatPinRef = useRef<HTMLDivElement>(null);
   const [chatProgress, setChatProgress] = useState(0);
+  // Mobile: render all 4 stepper sections stacked instead of swapping tabs.
+  const [isMobileView, setIsMobileView] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobileView(window.matchMedia("(max-width: 768px)").matches);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // Pin the prompt block while it plays. ScrollTrigger maps the 200%
   // pin region to chatProgress 0 → 1. SenseChat reads this and
@@ -649,6 +657,19 @@ export default function AnalyzeSection() {
       return () => clearTimeout(t);
     }
   }, [backdropRevealed, contentRevealed]);
+
+  // Mobile: populate topic + reveal flags so all 4 stacked sections
+  // render their full content (chat, prediction, agent) at once.
+  useEffect(() => {
+    if (!isMobileView) return;
+    setTopic("revenue");
+    setShowQuestion(true);
+    setShowAiResponse(true);
+    setShowChart(true);
+    setDeployedTopic("revenue");
+    setBackdropRevealed(true);
+    setContentRevealed(true);
+  }, [isMobileView, setDeployedTopic]);
 
   // Mobile: no auto-cycle, no scroll animation. Show Monitor tab by
   // default — users can tap any other tab to switch. Everything is
@@ -999,6 +1020,11 @@ export default function AnalyzeSection() {
         >
           <div className="mac-frame" style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
             <div className="mac-inner" style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "36px 40px 24px", display: "flex", flexDirection: "column", justifyContent: "flex-start", gap: "14px" }}>
+              <div className="mobile-section-header">
+                <div className="mobile-section-eyebrow">Monitor</div>
+                <h3 className="mobile-section-title">Make decisions you don&apos;t second-guess.</h3>
+                <p className="mobile-section-sub">Radar is your personal, live view of the business. Every pinned card refreshes itself in real time.</p>
+              </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 12px", borderRadius: "999px", background: "rgba(232,93,58,0.10)", border: "1px solid rgba(232,93,58,0.30)", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>
                   Task Radar
@@ -1264,12 +1290,18 @@ export default function AnalyzeSection() {
         }}
       >
         <div style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
-        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: activeTab === "predict" ? "hidden" : "auto", padding: "36px 40px 24px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "flex-start", gap: "14px" }}>
+        <div className="mac-inner analyze-inner" style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: activeTab === "predict" ? "hidden" : "auto", padding: "36px 40px 24px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "flex-start", gap: "14px" }}>
         {/* Standalone Prediction cards — only show when Predict tab is
             active. Rendered at the TOP of the Mac window so no scroll
             is needed to reach them. */}
-        {activeTab === "predict" && topic === "revenue" && (
-          <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "18px 22px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)", maxWidth: "880px", width: "100%", marginLeft: "auto", marginRight: "auto" }}>
+        {((activeTab === "predict" || isMobileView) && (topic === "revenue" || isMobileView)) && (
+          <>
+          <div className="mobile-section-header predict-header">
+            <div className="mobile-section-eyebrow">Predict</div>
+            <h3 className="mobile-section-title">Stop fighting fires you could&apos;ve prevented.</h3>
+            <p className="mobile-section-sub">The early signals show up long before anything becomes a problem.</p>
+          </div>
+          <div className="predict-block" style={{ position: "relative", background: "linear-gradient(180deg, rgba(239,68,68,0.10) 0%, rgba(239,68,68,0.04) 60%, rgba(239,68,68,0.02) 100%)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: "14px", padding: "18px 22px", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 10px 30px -16px rgba(239,68,68,0.35)", maxWidth: "880px", width: "100%", marginLeft: "auto", marginRight: "auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "26px", height: "26px", borderRadius: "8px", background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)" }}>
@@ -1298,12 +1330,18 @@ export default function AnalyzeSection() {
               <span style={{ fontSize: "10px", color: "#22C55E", fontWeight: 600, padding: "3px 8px", borderRadius: "999px", background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)" }}>+$420K saved</span>
             </div>
           </div>
+          </>
         )}
 
         {/* Chat conversation — hidden in Predict tab so only the
             prediction card shows */}
-        {topic && activeTab !== "predict" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+        {(topic || isMobileView) && (activeTab !== "predict" || isMobileView) && (
+          <div className="chat-block" style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+            <div className="mobile-section-header analyze-header">
+              <div className="mobile-section-eyebrow">Analyze</div>
+              <h3 className="mobile-section-title">See what&apos;s behind every insight.</h3>
+              <p className="mobile-section-sub">Tap any Radar card to see the breakdown. Each follow-up question takes you one layer deeper.</p>
+            </div>
 
             {/* User question bubble */}
             <div
@@ -1570,7 +1608,12 @@ export default function AnalyzeSection() {
         {/* overflow: visible so the live activity card can transform
             out of the mac frame on its way to the radar section without
             being clipped at the frame edge. */}
-        <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "visible", padding: "36px 40px 24px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "flex-start", gap: "10px" }}>
+        <div className="mac-inner act-inner" style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "visible", padding: "36px 40px 24px", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "flex-start", gap: "10px" }}>
+          <div className="mobile-section-header recommend-header">
+            <div className="mobile-section-eyebrow">Recommend</div>
+            <h3 className="mobile-section-title">Know exactly what to do, every time.</h3>
+            <p className="mobile-section-sub">Each prediction arrives with the action drawn up and the projected outcome attached.</p>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "12px" }}>
             {/* Agent + steps */}
             <div className="card-depth" style={{ background: "var(--card-bg)", border: "1px solid var(--card-border)", borderRadius: "14px", padding: "18px" }}>
