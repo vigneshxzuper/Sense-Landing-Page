@@ -438,6 +438,39 @@ a, button { cursor: pointer; }
   .radar-grid-two-col { grid-template-columns: 1fr !important; gap: 12px !important; }
   .radar-jobs-grid { grid-template-columns: 1fr !important; }
 
+  /* ── Analyze Section: drop the Mac chrome on mobile, render the
+     Monitor view's dashboard cards as a flat radar-style stack ── */
+  .mac-window-section {
+    min-height: auto !important;
+    padding: 8px 16px 24px !important;
+    justify-content: flex-start !important;
+  }
+  .mac-window-chrome,
+  .mac-window-tab-copy,
+  .mac-window-stepper,
+  .analyze-view,
+  .act-view { display: none !important; }
+  .ask-view {
+    position: relative !important;
+    inset: auto !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+    transform: none !important;
+    display: block !important;
+  }
+  .ask-view .mac-frame {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  .ask-view .mac-inner {
+    position: relative !important;
+    inset: auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    gap: 12px !important;
+  }
+
   /* ── Analyze Section / Mac window ── */
   .analyze-tab-bar { font-size: 13px !important; }
   .analyze-tab-bar button {

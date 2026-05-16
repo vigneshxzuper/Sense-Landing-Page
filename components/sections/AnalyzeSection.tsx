@@ -782,6 +782,7 @@ export default function AnalyzeSection() {
           Slides down + fades in coordinated with the Mac window
           entering the viewport. */}
       <div
+        className="mac-window-stepper"
         style={{
           position: "sticky",
           top: "104px",
@@ -896,11 +897,14 @@ export default function AnalyzeSection() {
           window. Shown when view === "ask" (Monitor / Analyze tabs).
           Overdue-invoices card surfaces once the user's auto-cursor
           presses Add-to-Radar in the intro SenseChat. */}
-      <div ref={askRef} style={{ minHeight: "112vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0", position: "relative" }}>
-        <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={effectiveParallax} />
+      <div ref={askRef} className="mac-window-section" style={{ minHeight: "112vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0", position: "relative" }}>
+        <div className="mac-window-chrome">
+          <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={effectiveParallax} />
+        </div>
         {/* Per-tab copy — sits below the sticky stepper, above the Mac
             window. Swaps based on activeTab with a soft crossfade. */}
         <div
+          className="mac-window-tab-copy"
           style={{
             position: "absolute",
             top: "200px",
@@ -978,6 +982,7 @@ export default function AnalyzeSection() {
           </div>
         </div>
         <div
+          className="mac-view ask-view"
           style={{
             position: "absolute",
             inset: 0,
@@ -992,8 +997,8 @@ export default function AnalyzeSection() {
             transition: viewTransition,
           }}
         >
-          <div style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
-            <div style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "36px 40px 24px", display: "flex", flexDirection: "column", justifyContent: "flex-start", gap: "14px" }}>
+          <div className="mac-frame" style={{ width: "min(1000px, 78vw)", height: "min(700px, 54.6vw)", maxHeight: "68vh", position: "relative" }}>
+            <div className="mac-inner" style={{ position: "absolute", top: "9.82%", left: "1.25%", right: "1.25%", bottom: "3.57%", overflow: "auto", padding: "36px 40px 24px", display: "flex", flexDirection: "column", justifyContent: "flex-start", gap: "14px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "5px 12px", borderRadius: "999px", background: "rgba(232,93,58,0.10)", border: "1px solid rgba(232,93,58,0.30)", fontSize: "11px", color: "#E85D3A", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>
                   Task Radar
@@ -1243,6 +1248,7 @@ export default function AnalyzeSection() {
       {/* Analyze — chat + chart, overlays the Mac window when view === "analyze" */}
       <div
         id="analyze-content"
+        className="mac-view analyze-view"
         style={{
           position: "absolute",
           inset: 0,
@@ -1545,6 +1551,7 @@ export default function AnalyzeSection() {
 
       {/* Act overlay — shows when view === "act" */}
       <div
+        className="mac-view act-view"
         style={{
           position: "absolute",
           inset: 0,
