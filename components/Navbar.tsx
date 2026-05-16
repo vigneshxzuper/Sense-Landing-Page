@@ -28,6 +28,14 @@ export default function Navbar() {
   // nav slides in as the headline locks in, not after pin release.
   const [navReady, setNavReady] = useState(false);
   useEffect(() => {
+    // On mobile the CRT hero is replaced by the static hero, so the
+    // nav can show immediately. On desktop, wait for the 300vh pinned
+    // CRT timeline to finish.
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    if (isMobile) {
+      setNavReady(true);
+      return;
+    }
     const onScroll = () => {
       if (window.scrollY > window.innerHeight * 2.5) {
         if (!navReady) setNavReady(true);

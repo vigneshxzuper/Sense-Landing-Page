@@ -552,50 +552,6 @@ export default function AnalyzeSection() {
     };
   }, { scope: sectionRef });
 
-  // Mobile fallback: when no pin, just cycle through tabs on a timer
-  // once the section enters the viewport so the story still progresses.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!window.matchMedia("(max-width: 768px)").matches) return;
-    const el = askRef.current;
-    if (!el) return;
-    let cycleTimer: ReturnType<typeof setInterval> | null = null;
-    let progressTimer: ReturnType<typeof setInterval> | null = null;
-    const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        let idx = 0;
-        setActiveTab(TAB_ORDER[0]);
-        setView(tabToView(TAB_ORDER[0]));
-        setTabProgress(0);
-        const dur = 4000;
-        const tick = 50;
-        let elapsed = 0;
-        progressTimer = setInterval(() => {
-          elapsed += tick;
-          setTabProgress(Math.min(1, elapsed / dur));
-        }, tick);
-        cycleTimer = setInterval(() => {
-          elapsed = 0;
-          idx = idx + 1;
-          if (idx >= TAB_ORDER.length) {
-            if (cycleTimer) clearInterval(cycleTimer);
-            if (progressTimer) clearInterval(progressTimer);
-            setTabProgress(1);
-            return;
-          }
-          setActiveTab(TAB_ORDER[idx]);
-          setView(tabToView(TAB_ORDER[idx]));
-        }, dur);
-        io.disconnect();
-      }
-    }, { threshold: 0.3 });
-    io.observe(el);
-    return () => {
-      if (cycleTimer) clearInterval(cycleTimer);
-      if (progressTimer) clearInterval(progressTimer);
-      io.disconnect();
-    };
-  }, []);
 
   // Click a tab → scroll to that tab's range start within the pinned
   // region. On mobile (no pin), just set the active tab directly.
@@ -665,18 +621,49 @@ export default function AnalyzeSection() {
     }
   }, [askProgress, backdropRevealed]);
 
-  // Content inside the Mac window fades in ~600ms AFTER the chrome
+  // Mobile: trigger backdrop reveal via IntersectionObserver as soon
+  // as the Mac-window block enters the viewport — scroll-progress math
+  // can lag on short mobile viewports, so observe directly.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 768px)").matches) return;
+    const el = askRef.current;
+    if (!el || backdropRevealed) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setBackdropRevealed(true);
+        io.disconnect();
+      }
+    }, { threshold: 0.12 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [backdropRevealed]);
+
+  // Content inside the Mac window fades in ~400ms AFTER the chrome
   // has revealed, so the user sees the window arrive first and then
   // the dashboard / chat / agent populate.
   const [contentRevealed, setContentRevealed] = useState(false);
   useEffect(() => {
     if (backdropRevealed && !contentRevealed) {
-      const t = setTimeout(() => setContentRevealed(true), 600);
+      const t = setTimeout(() => setContentRevealed(true), 400);
       return () => clearTimeout(t);
     }
   }, [backdropRevealed, contentRevealed]);
 
+  // Mobile: no auto-cycle, no scroll animation. Show Monitor tab by
+  // default — users can tap any other tab to switch. Everything is
+  // static and readable.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 768px)").matches) return;
+    setActiveTab("monitor");
+    setView("ask");
+    setTabProgress(0);
+  }, []);
+
   const parallaxOffset = (askProgress - 0.5) * -50;
+  const mobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+  const effectiveParallax = mobile ? 0 : parallaxOffset;
 
   const [selectedIdx, setSelectedIdx] = useState(0);
   // Chip click jumps the tab cycle straight to Analyze.
@@ -910,7 +897,7 @@ export default function AnalyzeSection() {
           Overdue-invoices card surfaces once the user's auto-cursor
           presses Add-to-Radar in the intro SenseChat. */}
       <div ref={askRef} style={{ minHeight: "112vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "0", position: "relative" }}>
-        <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={parallaxOffset} />
+        <BrowserOutlineBackdrop revealed={backdropRevealed} parallax={effectiveParallax} />
         {/* Per-tab copy — sits below the sticky stepper, above the Mac
             window. Swaps based on activeTab with a soft crossfade. */}
         <div

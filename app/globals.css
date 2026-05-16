@@ -432,75 +432,42 @@ a, button { cursor: pointer; }
   .nav-center-links { display: none !important; }
   .nav-cta-shrunk { padding: 6px 12px !important; font-size: 12px !important; }
 
-  /* ── Footer ── */
-  .footer-top-row {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 24px !important;
-  }
-  .footer-top-row > div:last-child {
-    flex-wrap: wrap;
-    gap: 10px !important;
-  }
-  .footer-top-row img { height: 60px !important; }
-
-  .footer-link-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 28px 20px !important;
-    padding-top: 32px !important;
-    padding-bottom: 24px !important;
-  }
-
-  .footer-store-socials {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 20px !important;
-    padding-top: 20px !important;
-  }
-  .footer-store-socials img { height: 40px !important; }
-
-  .footer-legal-row {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 12px !important;
-  }
-  .footer-legal-row > div:last-child { gap: 14px 20px !important; }
-
-  .footer-container { padding: 40px 20px 0 !important; }
-  .footer-legal { padding: 16px 20px !important; }
-
-  /* ── Footer scene + ZUPER overlay ── */
-  .footer-scene { height: clamp(220px, 60vw, 320px) !important; }
+  /* ── Footer (mobile uses its own clean stacked layout — see Footer.tsx) ── */
 
   /* ── Radar Section ── */
   .radar-grid-two-col { grid-template-columns: 1fr !important; gap: 12px !important; }
   .radar-jobs-grid { grid-template-columns: 1fr !important; }
 
   /* ── Analyze Section / Mac window ── */
-  .analyze-mac-window {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin-left: -16px !important;
-    margin-right: -16px !important;
-    border-radius: 0 !important;
-  }
-  .analyze-tab-bar { font-size: 12px !important; }
+  .analyze-tab-bar { font-size: 13px !important; }
   .analyze-tab-bar button {
-    padding: 12px 6px !important;
-    font-size: 11.5px !important;
-    letter-spacing: 0.02em !important;
+    padding: 14px 4px !important;
+    font-size: 12.5px !important;
+    letter-spacing: 0 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .analyze-dashboard-grid {
     grid-template-columns: 1fr !important;
     grid-template-areas: "monitor" "dormant" "stuck" "missed" !important;
     gap: 12px !important;
   }
+  /* IntelligenceSection — 2-col grid collapses */
+  .intelligence-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  /* Testimonials marquee — slow on mobile so quotes are readable */
+  .testimonial-marquee > div {
+    animation-duration: 140s !important;
+  }
 
-  /* ── Anywhere Section: stack cards vertically on mobile ── */
+  /* ── Anywhere Section: stack cards vertically on mobile, bigger ── */
   .anywhere-stage {
     height: auto !important;
     overflow: visible !important;
-    padding: 40px 16px 80px !important;
+    padding: 40px 8px 80px !important;
   }
   .anywhere-stack-wrap {
     position: relative !important;
@@ -515,12 +482,12 @@ a, button { cursor: pointer; }
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 18px !important;
+    gap: 24px !important;
   }
   .anywhere-card {
     position: relative !important;
     inset: auto !important;
-    aspect-ratio: 2000 / 1152;
+    aspect-ratio: 4 / 3;
     width: 100% !important;
     transform: none !important;
     opacity: 1 !important;
@@ -536,11 +503,21 @@ a, button { cursor: pointer; }
   .sparkline-bar { transform: scaleY(1) !important; }
   .crt-boot-inner { opacity: 1 !important; }
 
+  /* Static page — no entrance transforms */
+  .card-depth-lift,
+  .hero-cta-anim { transform: none !important; transition: none !important; }
+
+  /* Hero CTAs stack on mobile so they aren't squashed */
+  .hero-cta-anim { width: 100%; }
+
+  /* Per-tab title/sub copy and tab progress fill — visible, no anim */
+  .docs-grid-stage { transform: none !important; }
+
   /* ── Testimonials ── */
   .testimonial-card { width: 84vw !important; padding: 22px !important; }
 
   /* ── Docs / Flying icons ── */
-  .docs-grid-stage { transform: scale(0.78); }
+  .docs-grid-stage { transform: scale(0.92); }
 
   /* ── Sections: cap horizontal padding ── */
   section { padding-left: 16px; padding-right: 16px; }

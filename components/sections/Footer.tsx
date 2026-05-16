@@ -162,6 +162,119 @@ function FooterColumn({ title, links }: { title: string; links: Link[] }) {
   );
 }
 
+function MobileFooter() {
+  return (
+    <div
+      style={{
+        background: "#050d23",
+        color: "#E6ECF5",
+        padding: "40px 20px 24px",
+        fontFamily: "var(--font-inter), 'Inter', system-ui, sans-serif",
+        lineHeight: 1.4,
+      }}
+    >
+      {/* Logo */}
+      <div style={{ marginBottom: "28px" }}>
+        <span style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "0.04em", color: "#fff" }}>
+          ZUPER<sup style={{ fontSize: "9px", fontWeight: 600, marginLeft: 2 }}>™</sup>
+        </span>
+      </div>
+
+      {/* Trust badges row */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "32px", flexWrap: "wrap" }}>
+        {[
+          { label: "SOC 2 Type 2", href: "https://beta.zuper.co/compliance", src: "/footer/badge1.png" },
+          { label: "ISO 27001", href: "https://beta.zuper.co/compliance", src: "/footer/badge2.png" },
+          { label: "Great Place To Work", href: "https://beta.zuper.co/careers", src: "/footer/badge3.png" },
+        ].map((b) => (
+          <a key={b.label} href={b.href} target="_blank" rel="noopener noreferrer" aria-label={b.label}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={b.src} alt={b.label} style={{ height: "54px", width: "auto", display: "block" }} />
+          </a>
+        ))}
+      </div>
+
+      {/* Link columns stacked */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "28px", marginBottom: "32px" }}>
+        {COLUMNS.map((col) => (
+          <div key={col.title}>
+            <FooterColumn title={col.title} links={col.links} />
+            {col.extra && (
+              <div style={{ marginTop: "20px" }}>
+                <FooterColumn title={col.extra.title} links={col.extra.links} />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Store badges */}
+      <div style={{ display: "flex", gap: "10px", marginBottom: "24px" }}>
+        <a href="https://play.google.com/store/apps/details?id=co.zuper.android" target="_blank" rel="noopener noreferrer" aria-label="Google Play">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/footer/google-play.png" alt="Google Play" style={{ height: "40px", width: "auto", display: "block" }} />
+        </a>
+        <a href="https://apps.apple.com/in/app/zuper-field-service-your-way/id1633081340" target="_blank" rel="noopener noreferrer" aria-label="App Store">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/footer/app-store.png" alt="App Store" style={{ height: "40px", width: "auto", display: "block" }} />
+        </a>
+      </div>
+
+      {/* Social row */}
+      <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
+        {[
+          { label: "Facebook", href: "https://www.facebook.com/zuperpro/" },
+          { label: "Instagram", href: "https://www.instagram.com/zuperpro/" },
+          { label: "YouTube", href: "https://www.youtube.com/@zuperofficial" },
+          { label: "LinkedIn", href: "https://www.linkedin.com/company/zuperpro/" },
+          { label: "X", href: "https://twitter.com/zuperpro" },
+        ].map((s) => (
+          <a
+            key={s.label}
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={s.label}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              border: "1px solid rgba(255,255,255,0.18)",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: "12px",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            {s.label.charAt(0)}
+          </a>
+        ))}
+      </div>
+
+      {/* Legal */}
+      <div style={{ paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.10)" }}>
+        <div style={{ fontSize: "12px", color: "rgba(230,236,245,0.6)", marginBottom: "12px" }}>© 2026 Zuper Inc</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 18px", fontSize: "12px" }}>
+          {LEGAL.map((l) => (
+            <a
+              key={l.label}
+              href={l.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "rgba(230,236,245,0.72)", textDecoration: "none" }}
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Footer() {
   return (
     <footer
@@ -169,11 +282,11 @@ export default function Footer() {
         position: "relative",
         background: "#050d23",
         overflow: "hidden",
-        lineHeight: 0,
         fontFamily: "var(--font-inter), 'Inter', system-ui, sans-serif",
       }}
     >
-      <div style={{ position: "relative", width: "100%" }}>
+      {/* Desktop: image + overlaid link grid + hotspots */}
+      <div className="footer-desktop" style={{ position: "relative", width: "100%", lineHeight: 0 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/footer/footer-image.png"
@@ -181,8 +294,6 @@ export default function Footer() {
           style={{ width: "100%", height: "auto", display: "block" }}
         />
 
-        {/* 5-column link grid overlaid in the empty band between top
-            divider and store-row divider. */}
         <div
           style={{
             position: "absolute",
@@ -214,7 +325,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Clickable hotspots for badges / store / social / legal */}
         {HOTSPOTS.map((h, i) => (
           <a
             key={`${h.label}-${i}`}
@@ -243,14 +353,17 @@ export default function Footer() {
         ))}
       </div>
 
+      {/* Mobile: clean stacked text footer */}
+      <div className="footer-mobile" style={{ display: "none" }}>
+        <MobileFooter />
+      </div>
+
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        @media (max-width: 900px) {
-          .footer-link-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 18px 16px !important;
-          }
+        @media (max-width: 768px) {
+          .footer-desktop { display: none !important; }
+          .footer-mobile { display: block !important; }
         }
       `,
         }}
